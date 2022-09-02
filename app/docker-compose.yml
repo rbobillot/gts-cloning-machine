@@ -1,0 +1,38 @@
+version: '3'
+services:
+  gts-db:
+    container_name: gts-db
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./gts-service/gts-db/pgdata:/pgdata
+      # store locally the Dockerized postgres data
+    env_file:
+      - gts-service/gts-service.env
+      # use env vars from a common file, to setup postgres DB
+    environment:
+      - PGDATA=/pgdata
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5432"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      # check if 'gts-db' is properly running, to handle 'gts-service' start/restart (on docker-compose up)
+  gts-service:
+    container_name: gts-service
+    build: gts-service
+    ports:
+      - "9090:9090"
+    env_file:
+      - gts-service/gts-service.env
+    restart: "on-failure"
+      # restart the service if a start failure happened (unreachable DB, for example)
+    depends_on:
+      # waits for 'gts-db' to run before running 'gts-service' container
+      - gts-db
+    links:
+      - gts-db
+    volumes:
+      - ./gts-service:/home/gts-service
+      # copies current dir to container, according to this project packages structure
