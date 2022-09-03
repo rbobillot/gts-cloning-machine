@@ -16,14 +16,6 @@ from sys import argv, exit
 from time import sleep
 import os
 
-s = system()
-if s == 'Darwin' or s == 'Linux':
-    if os.getuid() != 0:
-        print 'Program must be run as superuser. Enter your password below',
-        print 'if prompted.'
-        os.system('sudo ' + argv[0] + ' root')
-        exit(0)
-
 print gtsvar.version
 
 initServ()

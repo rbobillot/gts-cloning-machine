@@ -87,8 +87,8 @@ class Response:
 
 
 def dnsspoof():
-    #dns_server = "164.132.44.106"
-    dns_server = "178.62.43.212"  # This is the unofficial pkmnclassic.net server
+    dns_server = "164.132.44.106"
+    # dns_server = "178.62.43.212"  # This is the unofficial pkmnclassic.net server
     s = socket.socket()
     s.connect((dns_server, 53))
     me = "".join(chr(int(x)) for x in s.getsockname()[0].split("."))
@@ -153,8 +153,8 @@ def respFromServ(req):
     s = socket.socket()
     #s.connect(("gamestats2.gs.nintendowifi.net", 80))
     # s.connect(("207.38.11.146", 80))
-    #s.connect(("164.132.44.106", 80))
-    s.connect(("178.62.43.212", 80))
+    s.connect(("164.132.44.106", 80))
+    #s.connect(("178.62.43.212", 80))
     s.send(str(req))
     data = ""
     while True:
