@@ -1,4 +1,4 @@
-#GTS-FRONT
+# GTS-FRONT
 Frontend interface for the GTS service.
 
 ---
@@ -15,12 +15,12 @@ Flow:
 
 ---
 
-#Fake-GTS to NDS
+# Fake-GTS to NDS
 ![gts-to-nds-grid](../../misc/GTS2NDS-grid.jpg)
 
 ---
 
-#NDS to Fake-GTS
+# NDS to Fake-GTS
 ```
 +-----------------------------------------------------------------------------+
 |                                                                             |
