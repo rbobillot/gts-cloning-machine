@@ -19,12 +19,12 @@ Flow:
 ```
 +-----------------------------------------------------------------------------+
 |                                                                             |
-|      Fake-GTS running: XX.XX.XX.XX               NDS Status: CONNECTED  <- - - - -  updated on NDS join/leave (via CWF)
+|    Fake-GTS Status: Running on XX.XX.XX.XX         NDS Status: CONNECTED  <- - - - - updated on NDS join/leave (via CWF)
 |                                                                             | 
 +-----------------------------------------------------------------------------+
 |                                                                             |
 |                                                                             |
-|   Mode:  NDS (Gen4) => Fake-GTS  <- - - - - - - - - - - - - - - - - - - - - - - - - dropdown menu (updating the window)
+|   Mode:  NDS (Gen4) => Fake-GTS  <- - - - - - - - - - - - - - - - - - - - - - - - -  dropdown menu (updating the window)
 |          ----------------------                                             |
 |                                                                             |
 |   +------+ +----------------------------------------------------+ +------+  |
@@ -67,7 +67,7 @@ Flow:
 ```
 +-----------------------------------------------------------------------------+
 |                                                                             |
-|      Fake-GTS running: XX.XX.XX.XX               NDS Status: CONNECTED  <- - - - -  updated on NDS join/leave (via CWF)
+|    Fake-GTS Status: Running on XX.XX.XX.XX         NDS Status: CONNECTED    |
 |                                                                             | 
 +-----------------------------------------------------------------------------+
 |                                                                             |
