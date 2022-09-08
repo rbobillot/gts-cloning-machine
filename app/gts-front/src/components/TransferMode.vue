@@ -1,3 +1,4 @@
+<!-- USELESS FOR NOW -->
 <script setup lang="ts">
 import { ref } from 'vue'
 import 'vue-select/dist/vue-select.css';
@@ -14,9 +15,8 @@ const transferModes = [
 </script>
 
 <template>
-  <!--<h1>{{ msg }}</h1>-->
 
-  <div id="modes">
+  <div id="modes-selector" class="transfer-mode">
     <h2>Transfer Mode: </h2>
     <v-select
       v-model="selectedMode"
@@ -26,8 +26,11 @@ const transferModes = [
       ></v-select>
   </div>
 
+  <div class="start-transfer">
+    <button class="submit">Start Transfer</button>
+  </div>
 
-  <div class="transfer-mode">
+  <div class="pokemon-to-transfer">
     <p>Selected Mode: {{selectedMode}}</p>
   </div>
 
@@ -51,9 +54,24 @@ h2 {
   -moz-text-size-adjust: none;
 }
 
-#modes {
+#modes-selector {
   max-width: 30em;
   margin: 1em auto;
+}
+
+.transfer-mode {
+  grid-column: 2 / 7;
+  grid-row: 5;
+}
+
+.start-transfer {
+  grid-column: 9 / 11;
+  grid-row: 5;
+}
+
+.pokemon-to-transfer {
+  grid-column: 13 / 18;
+  grid-row: 5;
 }
 
 </style>
