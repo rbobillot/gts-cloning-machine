@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import axios from 'axios';
 import 'vue-select/dist/vue-select.css'
+import 'light-icons/dist/light-icon.css'
 
 const fgtsStatus = ref({isRunning: false, status: "Not Running"}) // ref("Running on 192.168.0.1") --> handle with SocketIO ?
 const ndsStatus = ref({isConnected: false, status: "Not Connected"}) // ref("Connected") --> handle with SocketIO ?
@@ -116,6 +117,31 @@ const giratina = {
   "raw_pkm_data": "VCdaJwAAo93nATIAW5tVm/L6AQBHLgADAAAAAAAAAAAAAAAAAAAAANIB9gBRAdMBBQUPBQAAAABb9cwvAAAAAAQAAAAAAD4AMQEzATwBKwE+ATMBOAErAf//AAAAAAAMAAAAAAAAAAAsAf//AAAAAAAAAAAAAAAAAAAACQEdAAA+AAABLwUAAAAAAAAvANIA0gBnAJAAWgBwAIAAAAAAAAADCv//////////////////////////////VwH//1AB////////OAH///////8vAf////8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM="
 }
 
+const typesColors = {
+  "bug": "#A8B820",
+  "dark": "#705848",
+  "dragon": "#7038F8",
+  "electric": "#F8D030",
+  "fairy": "#EE99AC",
+  "fighting": "#C03028",
+  "fire": "#F08030",
+  "flying": "#A890F0",
+  "ghost": "#705898",
+  "grass": "#78C850",
+  "ground": "#E0C068",
+  "ice": "#98D8D8",
+  "normal": "#A8A878",
+  "poison": "#A040A0",
+  "psychic": "#F85888",
+  "rock": "#B8A038",
+  "steel": "#B8B8D0",
+  "water": "#6890F0",
+}
+
+const getBackgroundColor = (type) => {
+  return `background : ${typesColors[type]}`
+}
+
 const transferablePkmns = ref([arceus, giratina])
 
 const transferPokemon = () => {
@@ -132,14 +158,14 @@ const canTransfer = () => {
   || isTransferPending.value)
 }
 
-const selectedPkmn = () => {
+const getSelectedPkmn = () => {
   return transferablePkmns.value.find(p => p.id === selectedPkmnId.value)
 }
 
 const getPokemonSprite = () => {
   if (!selectedPkmnId || !transferablePkmns) return
 
-  const p = selectedPkmn()
+  const p = getSelectedPkmn()
   if (!p) return
   return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.shiny ? 'shiny/' : ''}${p.index}.png`
 }
@@ -187,10 +213,10 @@ const updateMoveInfo = (move: string, index: number) => {
   <div class="transfer-mode">
     <lv-dropdown
       v-model="selectedMode"
+      iconRight="light-icon-chevron-down"
       optionLabel="desc"
       optionValue="mode"
       placeholder="Select a Transfer Mode"
-      icon-right="light-icon-arrow-down-circle"
       :value="selectedMode"
       :options="transferModes"
       :rounded="true"
@@ -208,62 +234,75 @@ const updateMoveInfo = (move: string, index: number) => {
     <LvLoader v-show="isTransferPending" type="line-scale" :scale="2" color="grey" />
   </div>
   <div class="pkmn-to-transfer">
-    <lv-dropdown v-show="selectedMode?.pf === 'gts-nds'"
+    <LvDropdown v-show="selectedMode?.pf === 'gts-nds'"
+      iconRight="light-icon-chevron-down"
       v-model="selectedPkmnId"
-      optionLabel="name"
+      optionLabel="species"
       optionValue="id"
       placeholder="Select a Pokemon to transfer"
-      icon-right="light-icon-arrow-down-circle"
       :value="selectedPkmnId"
-      :options="transferablePkmns"
+      :options="transferablePkmns.sort((a, b) => a.species.localeCompare(b.species))"
       :rounded="true"
       :disabled="isTransferPending"
       />
   </div>
 
   <!-- Pokemon basic info props -->
-  <div v-if="shouldDisplayPkmn()" class="pkmn-object-nature-icon">
+  <div v-if="shouldDisplayPkmn()" class="pkmn-sprite-star-object-nature">
     <div class="pkmn-sprite" width="96" height="96">
       <img :src="getPokemonSprite()" />
     </div>
     <div class="pkmn-shiny-star">
-    <svg v-if="selectedPkmn()?.shiny" width="20" height="20" style="color: red" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+    <svg v-if="getSelectedPkmn()?.shiny" width="20" height="20" style="color: red" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
       <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z" fill="red"/>
     </svg>
     </div>
     <div class="pkmn-held-item">
-      <img :src="`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${selectedPkmn()?.holding}.png`" />
+      <img :src="`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${getSelectedPkmn()?.holding}.png`" />
     </div>
     <div class="pkmn-name">
-      {{selectedPkmn()?.name}}
+      {{getSelectedPkmn()?.name}}
     </div>
   </div>
   <div v-if="shouldDisplayPkmn()" class="pkm-stats index-level-nature">
-    <div class="pkm-stat pkmn-index"><div class="pkm-stat-title">National Index</div><div class="pkm-stat-value">{{selectedPkmn()?.index}}</div></div>
-    <div class="pkm-stat pkmn-level"><div class="pkm-stat-title">Level</div><div class="pkm-stat-value">{{selectedPkmn()?.level}}</div></div>
-    <div class="pkm-stat pkmn-nature"><div class="pkm-stat-title">Nature</div><div class="pkm-stat-value">{{selectedPkmn()?.nature}}</div></div>
+    <div class="pkm-stat pkmn-index"><div class="pkm-stat-title">National Index</div><div class="pkm-stat-value">{{getSelectedPkmn()?.index}}</div></div>
+    <div class="pkm-stat pkmn-level"><div class="pkm-stat-title">Level</div><div class="pkm-stat-value">{{getSelectedPkmn()?.level}}</div></div>
+    <div class="pkm-stat pkmn-nature"><div class="pkm-stat-title">Nature</div><div class="pkm-stat-value">{{getSelectedPkmn()?.nature}}</div></div>
   </div>
   <div v-if="shouldDisplayPkmn()" class="pkm-stats ability-hiddenpower-happiness">
-    <div class="pkm-stat pkmn-ability"><div class="pkm-stat-title">Ability</div><div class="pkm-stat-value">{{selectedPkmn()?.ability}}</div></div>
-    <div class="pkm-stat pkmn-hiddenpower"><div class="pkm-stat-title">Hidden Power</div><div class="pkm-stat-value">{{selectedPkmn()?.hidden_power.base_power}} ({{selectedPkmn()?.hidden_power.power_type}})</div></div>
-    <div class="pkm-stat pkmn-happiness"><div class="pkm-stat-title">Happiness</div><div class="pkm-stat-value">{{selectedPkmn()?.happiness}}</div></div>
+    <div class="pkm-stat pkmn-ability"><div class="pkm-stat-title">Ability</div><div class="pkm-stat-value">{{getSelectedPkmn()?.ability}}</div></div>
+    <div class="pkm-stat pkmn-hiddenpower"><div class="pkm-stat-title">Hidden Power</div><div class="pkm-stat-value">{{getSelectedPkmn()?.hidden_power.base_power}} ({{getSelectedPkmn()?.hidden_power.power_type}})</div></div>
+    <div class="pkm-stat pkmn-happiness"><div class="pkm-stat-title">Happiness</div><div class="pkm-stat-value">{{getSelectedPkmn()?.happiness}}</div></div>
   </div>
   <div v-if="shouldDisplayPkmn()" class="pkm-stats ot-tid-sid">
-    <div class="pkm-stat pkmn-ot"><div class="pkm-stat-title">Original Trainer</div><div class="pkm-stat-value">{{selectedPkmn()?.ot}}</div></div>
-    <div class="pkm-stat pkmn-tid"><div class="pkm-stat-title">Trainer ID</div><div class="pkm-stat-value">{{selectedPkmn()?.tid}}</div></div>
-    <div class="pkm-stat pkmn-sid"><div class="pkm-stat-title">Secret ID</div><div class="pkm-stat-value">{{selectedPkmn()?.sid}}</div></div>
+    <div class="pkm-stat pkmn-ot"><div class="pkm-stat-title">Original Trainer</div><div class="pkm-stat-value">{{getSelectedPkmn()?.ot}}</div></div>
+    <div class="pkm-stat pkmn-tid"><div class="pkm-stat-title">Trainer ID</div><div class="pkm-stat-value">{{getSelectedPkmn()?.tid}}</div></div>
+    <div class="pkm-stat pkmn-sid"><div class="pkm-stat-title">Secret ID</div><div class="pkm-stat-value">{{getSelectedPkmn()?.sid}}</div></div>
   </div>
   <div v-if="shouldDisplayPkmn()" class="pkmn-moves">
-    <LvBadge color="secondary" class="pkmn-move-1">{{selectedPkmn()?.moves[0]}}</LvBadge>
-    <LvBadge color="secondary" class="pkmn-move-2">{{selectedPkmn()?.moves[1]}}</LvBadge>
-    <LvBadge color="secondary" class="pkmn-move-3">{{selectedPkmn()?.moves[2]}}</LvBadge>
-    <LvBadge color="secondary" class="pkmn-move-4">{{selectedPkmn()?.moves[3]}}</LvBadge>
+    <span v-for="index in 4" :key="index" :class="`lv-buttonset pkmn-move-${index}`">
+      <LvButton
+      rounded
+        :label="getSelectedPkmn()?.moves[index-1]"
+        size="lg" />
+      <LvButton
+        size="lg"
+        icon="light-icon-target" />
+    </span>
+    <!--
+    <LvButton v-for="index in 4"
+    :key="index"
+    :class="`pkmn-move-${index}`"
+    rounded
+    :label="getSelectedPkmn()?.moves[0]"
+    iconRight="light-icon-target"/>
+    -->
   </div>
 
   <!-- Pokemon IVs / EVs props -->
   <div v-if="shouldDisplayPkmn()" class="ivs">
     <div class="ivs-title">IVs</div>
-    <div v-for="(iv, key) in selectedPkmn()?.ivs" class="iv-line" :key="key">
+    <div v-for="(iv, key) in getSelectedPkmn()?.ivs" class="iv-line" :key="key">
       <div>{{key}}</div>
       <LvSlider :value="iv" :min="0" :max="31" :step="1" :disabled="true" sliderColor="#9973ff" />
       <div>{{iv}}</div>
@@ -271,7 +310,7 @@ const updateMoveInfo = (move: string, index: number) => {
   </div>
   <div v-if="shouldDisplayPkmn()" class="evs">
     <div class="evs-title">EVs</div>
-    <div v-for="(ev, key) in selectedPkmn()?.evs" class="ev-line" :key="key">
+    <div v-for="(ev, key) in getSelectedPkmn()?.evs" class="ev-line" :key="key">
       <div>{{key}}</div>
       <LvSlider :value="ev" :min="0" :max="252" :step="1" :disabled="true" sliderColor="#38b2ac" />
       <div>{{ev}}</div>
@@ -296,9 +335,9 @@ const updateMoveInfo = (move: string, index: number) => {
 .transfer-status { grid-area: 2 / 5 / 4 / 16; }
 .transfer-mode { grid-area: 5 / 2 / 6 / 8; }
 .start-transfer { grid-area: 5 / 9 / 6 / 12; }
-.pkmn-to-transfer { grid-area: 5 / 13 / 6 / 19; }
+.pkmn-to-transfer {  grid-area: 5 / 13 / 6 / 19; }
 
-.pkmn-object-nature-icon { 
+.pkmn-sprite-star-object-nature { 
   display: grid;
   grid-area: 7 / 2 / 10 / 5;
   grid-template-areas:
@@ -365,6 +404,7 @@ const updateMoveInfo = (move: string, index: number) => {
   grid-template-areas:
     "a a a a - b b b b"
     "c c c c - d d d d";
+  row-gap: 2rem;
 }
 .pkmn-move-1 { grid-area: a; }
 .pkmn-move-2 { grid-area: b; }
