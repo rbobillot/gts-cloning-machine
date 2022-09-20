@@ -7,6 +7,8 @@ import LvCard from 'lightvue/card';
 import LvDropdown from 'lightvue/dropdown';
 import LvLoader from 'lightvue/loaders';
 import LvBadge from 'lightvue/badge';
+import LvProgressBar from 'lightvue/progress-bar';
+import LvSlider from 'lightvue/slider';
 
 createApp(App)
     .component("v-select", vSelect)
@@ -15,4 +17,6 @@ createApp(App)
     .component('LvDropdown', LvDropdown)
     .component('LvLoader', LvLoader)
     .component('LvBadge', LvBadge)
+    .component('LvProgressBar', LvProgressBar)
+    .component('LvSlider', LvSlider)
     .mount('#app')

@@ -1,76 +1,122 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import axios from 'axios';
 import 'vue-select/dist/vue-select.css'
 
-const fgtsStatus = ref("Running on 192.168.0.1")
-const ndsStatus = ref("Connected")
-
-const selectedMode = ref(null)
-const selectedPkmnId = ref(null)
-const isTransferPending = ref(false)
-const transferProgress = ref(0)
+const fgtsStatus = ref({isRunning: false, status: "Not Running"}) // ref("Running on 192.168.0.1") --> handle with SocketIO ?
+const ndsStatus = ref({isConnected: false, status: "Not Connected"}) // ref("Connected") --> handle with SocketIO ?
 
 const transferModes = [
   { mode: { pf: 'nds-gts', gen: 4 }, desc : "NDS (Gen 4) to GTS" },
   { mode: { pf: 'gts-nds', gen: 4 }, desc : "GTS to NDS (Gen 4)" },
 ]
+const selectedMode = ref(null)
 
-// dummy pkmns
-const bulbasaur = {
-  id: '7885443d-d724-480e-81b2-06607d19e211',
-  index: 1,
-  shiny: true,
-  name: "BULBIZARRE", // sprite: https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/shiny/1.png
-  level: 25,
-  holding: "Master Ball", // sprite: https://pokeapi.co/media/sprites/items/master-ball.png
-  nature: "Timid",
-  ability: "",
-  hiddenPower: {
-    powerType: "dark-type",
-    basePower: 42
+const selectedPkmnId = ref(null)
+
+const isTransferPending = ref(false)
+const transferProgress = ref(0)
+
+const receivedPkmn = ref(null)
+
+// TODO: remove dummy pkmns, and call them through API
+const arceus = {
+  "id": "d02e1805-7920-4b58-809f-e85b7d13efd8",
+  "checksum": "0x3fd4",
+  "name": "ARCEUS",
+  "index": 493,
+  "holding": "rare-candy",
+  "shiny": true,
+  "level": 80,
+  "happiness": 70,
+  "nature": "Adamant",
+  "species": "Arceus",
+  "ability": "Multitype",
+  "gender": "Genderless",
+  "ot": "B",
+  "tid": 39771,
+  "sid": 39765,
+  "hidden_power": {
+    "power_type": "Electric",
+    "base_power": 63
   },
-  moves: [
-    { name: "Tackle", type: "normal-type", category: "physical" },
-    { name: "Growl", type: "normal-type", category: "status" },
-    { name: "Vine Whip", type: "grass-type", category: "physical" },
-    { name: "Leech Seed", type: "grass-type", category: "status" },
+  "moves": [
+    "Refresh",
+    "Future Sight",
+    "Recover",
+    "Hyper Beam"
   ],
-  happiness: 200,
-  ot: "B",
-  tid: "000000",
-  sid: "000000",
-  ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
-  evs: { hp: 252, atk: 0, def: 0, spa: 252, spd: 0, spe: 0 },
+  "ivs": {
+    "hp": 25,
+    "atk": 25,
+    "def": 31,
+    "spa": 9,
+    "spd": 2,
+    "spe": 27
+  },
+  "evs": {
+    "hp": 0,
+    "atk": 0,
+    "def": 0,
+    "spa": 0,
+    "spd": 0,
+    "spe": 0,
+    "total": 0
+  },
+  "original_language": "Français (France/Québec)",
+  "modified_fields": [],
+  "raw_pkm_data": "tpe4lwAAP9TtATIAW5tVmwDECQBGeQADAAAAAAAAAAAAAAAAAAAAAB8B+ABpAD8AFA8KBQAAAAA5/50EAAAAAAQAAAAAAFYAKwE8AS0BLwE/AT0B//8AAAAAAAAAAAAMAAAAAAAAAAAsAf//AAAAAAAAAAAAAAAAAAAACQUcAABWAAABUAUAAAAAAABQAC4BLgHuAN0A2gC3AMYAAAAAAAADCv//////////////////////////////VwH//1AB////////OAH///////8vAf////8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM="
 }
 
-const charmander = {
-  id: 'abacd6f8-6aad-433b-b8e2-a6e9bec053ef',
-  index: 4,
-  shiny: false,
-  name: "SALAMECHE", // sprite: https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png
-  level: 100,
-  holding: "Potion", // sprite: https://pokeapi.co/media/sprites/items/potion.png
-  nature: "Adamant",
-  ability: "",
-  hiddenPower: {
-    powerType: "dark-type",
-    basePower: 42
+const giratina = {
+  "id": "296d5246-9da6-44b5-b308-bce361a7d4d1",
+  "checksum": "0xa3dd",
+  "name": "GIRATINA",
+  "index": 487,
+  "holding": "rare-candy",
+  "shiny": true,
+  "level": 47,
+  "happiness": 71,
+  "nature": "Relaxed",
+  "species": "Giratina",
+  "ability": "Pressure",
+  "gender": "Genderless",
+  "ot": "B",
+  "tid": 39771,
+  "sid": 39765,
+  "hidden_power": {
+    "power_type": "Psychic",
+    "base_power": 42
   },
-  moves: [
-    { name: "Flammeche", type: "fire-type", category: "special" },
-    { name: "Charge", type: "electric-type", category: "physical" },
-    { name: "Lance-Flammes", type: "fire-type", category: "special" },
-    { name: "Griffe", type: "normal-type", category: "physical" },
+  "moves": [
+    "Ominous Wind",
+    "AncientPower",
+    "Dragon Claw",
+    "Shadow Force"
   ],
-  happiness: 200,
-  ot: "B",
-  tid: "000000",
-  sid: "000000",
-  ivs: { hp: 31, atk: 31, def: 31, spa: 31, spd: 31, spe: 31 },
-  evs: { hp: 252, atk: 0, def: 0, spa: 252, spd: 0, spe: 0 },
+  "ivs": {
+    "hp": 27,
+    "atk": 10,
+    "def": 29,
+    "spa": 28,
+    "spd": 23,
+    "spe": 25
+  },
+  "evs": {
+    "hp": 0,
+    "atk": 0,
+    "def": 0,
+    "spa": 0,
+    "spd": 0,
+    "spe": 0,
+    "total": 0
+  },
+  "original_language": "Français (France/Québec)",
+  "modified_fields": [],
+  "raw_pkm_data": "VCdaJwAAo93nATIAW5tVm/L6AQBHLgADAAAAAAAAAAAAAAAAAAAAANIB9gBRAdMBBQUPBQAAAABb9cwvAAAAAAQAAAAAAD4AMQEzATwBKwE+ATMBOAErAf//AAAAAAAMAAAAAAAAAAAsAf//AAAAAAAAAAAAAAAAAAAACQEdAAA+AAABLwUAAAAAAAAvANIA0gBnAJAAWgBwAIAAAAAAAAADCv//////////////////////////////VwH//1AB////////OAH///////8vAf////8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM="
 }
 
-const transferablePkmns = ref([bulbasaur, charmander])
+const transferablePkmns = ref([arceus, giratina])
 
 const transferPokemon = () => {
   isTransferPending.value = true
@@ -80,10 +126,9 @@ const transferPokemon = () => {
 }
 
 const canTransfer = () => {
-  return (!selectedMode.value
+  return (!fgtsStatus.value.isRunning || !ndsStatus.value.isConnected
+  || !selectedMode.value
   || (!selectedPkmnId.value && selectedMode?.value.pf === 'gts-nds') 
-  || !fgtsStatus.value
-  || !ndsStatus.value
   || isTransferPending.value)
 }
 
@@ -95,21 +140,50 @@ const getPokemonSprite = () => {
   if (!selectedPkmnId || !transferablePkmns) return
 
   const p = selectedPkmn()
+  if (!p) return
   return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p.shiny ? 'shiny/' : ''}${p.index}.png`
 }
+
+/**
+ * Display Pokemon infos when:
+ * - A "Pokemon to Transfer" is selected, when "GTS to ..." is selected
+ * OR
+ * - A Pokemon has been received/stored in the GTS DB
+ */
+const shouldDisplayPkmn = () => {
+  return (selectedMode.value && selectedMode.value.pf === 'gts-nds' && selectedPkmnId.value) || receivedPkmn.value
+}
+
+/* TODO: handle Pokemon moves correctly (colored divs depending on type, and logo depending on damage class)
+const updateMoveInfo = (move: string, index: number) => {
+  axios
+  .get(`https://pokeapi.co/api/v2/move/${move.toLocaleLowerCase().replace(' ', '-')}`)
+  .then((moveResp) => {
+    selectedPkmnMoves.value.splice(index, 1, {
+      index: index,
+      name: move,
+      damage_class: moveResp.data.damage_class.name,
+      type: moveResp.data.type.name,
+      // name_fr: moveResp.data.names.find((n: any) => n.language.name === 'fr').name,
+    })
+  })
+}
+*/
 
 </script>
 
 <template>
 
+<!-- Terminals infos -->
 <div class="main-grid">
   <div class="fgts-status">
-    <LvBadge color="info">GTS Status: {{fgtsStatus}}</LvBadge>
+    <LvBadge :color="fgtsStatus.isRunning ? 'info' : 'danger'">GTS Status: {{fgtsStatus.status}}</LvBadge>
   </div>
   <div class="nds-status">
-    <LvBadge color="info">NDS Status: {{ndsStatus}}</LvBadge>
+    <LvBadge :color="ndsStatus.isConnected ? 'info' : 'danger'">NDS Status: {{ndsStatus.status}}</LvBadge>
   </div>
   
+  <!-- Tranfers options -->
   <div class="transfer-mode">
     <lv-dropdown
       v-model="selectedMode"
@@ -147,53 +221,67 @@ const getPokemonSprite = () => {
       />
   </div>
 
-  <!-- add v-if ?
-    divs must be visible when:
-     - A "Pokemon to Transfer" is selected, when "GTS to ..." is selected
-     OR
-     - A Pokemon has been received/stored in the GTS DB
-  -->
-  <div v-show="selectedPkmnId" class="pkmn-object-nature-icon">
-    <img v-if="selectedPkmnId" :src="getPokemonSprite()"/>
-    <!-- add nature, gender, shiny-status?, object -->
+  <!-- Pokemon basic info props -->
+  <div v-if="shouldDisplayPkmn()" class="pkmn-object-nature-icon">
+    <div class="pkmn-sprite" width="96" height="96">
+      <img :src="getPokemonSprite()" />
+    </div>
+    <div class="pkmn-shiny-star">
+    <svg v-if="selectedPkmn()?.shiny" width="20" height="20" style="color: red" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M2.866 14.85c-.078.444.36.791.746.593l4.39-2.256 4.389 2.256c.386.198.824-.149.746-.592l-.83-4.73 3.522-3.356c.33-.314.16-.888-.282-.95l-4.898-.696L8.465.792a.513.513 0 0 0-.927 0L5.354 5.12l-4.898.696c-.441.062-.612.636-.283.95l3.523 3.356-.83 4.73zm4.905-2.767-3.686 1.894.694-3.957a.565.565 0 0 0-.163-.505L1.71 6.745l4.052-.576a.525.525 0 0 0 .393-.288L8 2.223l1.847 3.658a.525.525 0 0 0 .393.288l4.052.575-2.906 2.77a.565.565 0 0 0-.163.506l.694 3.957-3.686-1.894a.503.503 0 0 0-.461 0z" fill="red" />
+    </svg>
+    </div>
+    <div class="pkmn-held-item">
+      <img :src="`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${selectedPkmn()?.holding}.png`" />
+    </div>
+    <div class="pkmn-name">
+      {{selectedPkmn()?.name}}
+    </div>
   </div>
-  <div v-show="selectedPkmnId" class="name-index-level">
-    <div class="pkmn-name">Name: {{selectedPkmn()?.name}}</div>
-    <div class="pkmn-index">Index: {{selectedPkmn()?.index}}</div>
-    <div class="pkmn-level">Level: {{selectedPkmn()?.level}}</div>
+  <div v-if="shouldDisplayPkmn()" class="pkm-stats index-level-nature">
+    <div class="pkm-stat pkmn-index"><div class="pkm-stat-title">National Index</div><div class="pkm-stat-value">{{selectedPkmn()?.index}}</div></div>
+    <div class="pkm-stat pkmn-level"><div class="pkm-stat-title">Level</div><div class="pkm-stat-value">{{selectedPkmn()?.level}}</div></div>
+    <div class="pkm-stat pkmn-nature"><div class="pkm-stat-title">Nature</div><div class="pkm-stat-value">{{selectedPkmn()?.nature}}</div></div>
   </div>
-  <div v-show="selectedPkmnId" class="ability-hiddenpower-happiness">
-    <div class="pkmn-ability">ability: {{selectedPkmn()?.ability}}</div>
-    <div class="pkmn-hiddenpower">hiddenpower: {{[selectedPkmn()?.hiddenPower.powerType, selectedPkmn()?.hiddenPower.basePower]}}</div>
-    <div class="pkmn-level">happiness: {{selectedPkmn()?.happiness}}</div>
+  <div v-if="shouldDisplayPkmn()" class="pkm-stats ability-hiddenpower-happiness">
+    <div class="pkm-stat pkmn-ability"><div class="pkm-stat-title">Ability</div><div class="pkm-stat-value">{{selectedPkmn()?.ability}}</div></div>
+    <div class="pkm-stat pkmn-hiddenpower"><div class="pkm-stat-title">Hidden Power</div><div class="pkm-stat-value">{{selectedPkmn()?.hidden_power.base_power}} ({{selectedPkmn()?.hidden_power.power_type}})</div></div>
+    <div class="pkm-stat pkmn-happiness"><div class="pkm-stat-title">Happiness</div><div class="pkm-stat-value">{{selectedPkmn()?.happiness}}</div></div>
   </div>
-  <div v-show="selectedPkmnId" class="ot-tid-sid">
-    <div class="pkmn-ot">Original Trainer: {{selectedPkmn()?.ot}}</div>
-    <div class="pkmn-tid">Trainer ID: {{selectedPkmn()?.tid}}</div>
-    <div class="pkmn-sid">Secret ID: {{selectedPkmn()?.sid}}</div>
+  <div v-if="shouldDisplayPkmn()" class="pkm-stats ot-tid-sid">
+    <div class="pkm-stat pkmn-ot"><div class="pkm-stat-title">Original Trainer</div><div class="pkm-stat-value">{{selectedPkmn()?.ot}}</div></div>
+    <div class="pkm-stat pkmn-tid"><div class="pkm-stat-title">Trainer ID</div><div class="pkm-stat-value">{{selectedPkmn()?.tid}}</div></div>
+    <div class="pkm-stat pkmn-sid"><div class="pkm-stat-title">Secret ID</div><div class="pkm-stat-value">{{selectedPkmn()?.sid}}</div></div>
   </div>
-  <div v-show="selectedPkmnId" class="attacks">
-    <div class="pkmn-moves">Moves: {{selectedPkmn()?.moves}}</div>
+  <div v-if="shouldDisplayPkmn()" class="pkmn-moves">
+    <LvBadge color="secondary" class="pkmn-move-1">{{selectedPkmn()?.moves[0]}}</LvBadge>
+    <LvBadge color="secondary" class="pkmn-move-2">{{selectedPkmn()?.moves[1]}}</LvBadge>
+    <LvBadge color="secondary" class="pkmn-move-3">{{selectedPkmn()?.moves[2]}}</LvBadge>
+    <LvBadge color="secondary" class="pkmn-move-4">{{selectedPkmn()?.moves[3]}}</LvBadge>
   </div>
-  <div v-show="selectedPkmnId" class="nckbl ivs">
-    ivs
+
+  <!-- Pokemon IVs / EVs props -->
+  <div v-if="shouldDisplayPkmn()" class="ivs">
+    <div class="ivs-title">IVs</div>
+    <div v-for="(iv, key) in selectedPkmn()?.ivs" class="iv-line" :key="key">
+      <div>{{key}}</div>
+      <LvSlider :value="iv" :min="0" :max="31" :step="1" :disabled="true" sliderColor="#9973ff" />
+      <div>{{iv}}</div>
+    </div>
   </div>
-  <div v-show="selectedPkmnId" class="nckbl evs">
-    evs
+  <div v-if="shouldDisplayPkmn()" class="evs">
+    <div class="evs-title">EVs</div>
+    <div v-for="(ev, key) in selectedPkmn()?.evs" class="ev-line" :key="key">
+      <div>{{key}}</div>
+      <LvSlider :value="ev" :min="0" :max="252" :step="1" :disabled="true" sliderColor="#38b2ac" />
+      <div>{{ev}}</div>
+    </div>
   </div>
 </div>
 
 </template>
 
 <style scoped>
-
-.ckbl {
-  background: blue;
-}
-
-.nckbl {
-  background: orange;
-}
 
 .main-grid {
   display: grid;
@@ -209,12 +297,85 @@ const getPokemonSprite = () => {
 .transfer-mode { grid-area: 5 / 2 / 6 / 8; }
 .start-transfer { grid-area: 5 / 9 / 6 / 12; }
 .pkmn-to-transfer { grid-area: 5 / 13 / 6 / 19; }
-.pkmn-object-nature-icon { grid-area: 7 / 2 / 10 / 5; }
-.name-index-level { grid-area: 7 / 6 / 10 / 10; }
+
+.pkmn-object-nature-icon { 
+  display: grid;
+  grid-area: 7 / 2 / 10 / 5;
+  grid-template-areas:
+    "a a a b"
+    "a a a c"
+    "a a a -"
+    "d d d -";
+  grid-template: subgrid;
+  justify-content: center;
+}
+.pkmn-sprite { grid-area: a; }
+.pkmn-shiny-star { grid-area: b; }
+.pkmn-held-item { grid-area: c; }
+.pkmn-name { grid-area: d; font-weight: bold; }
+
+.pkm-stats {
+  display: grid;
+  grid-gap: 1rem;
+  align-content: center;
+  margin: 1fr;
+}
+.pkm-stat {
+  display: flex;
+  justify-content: space-between;
+  border: solid lightgray;
+  border-width: 1px 0;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+.pkm-stat-title {
+  font-style: italic;
+}
+.pkm-stat-value {
+  font-weight: bold;
+}
+
+.index-level-nature {
+  grid-area: 7 / 6 / 10 / 10;
+  grid-template-areas:
+    "a a a"
+    "b b b"
+    "c c c";
+}
+.pkmn-index { grid-area: a; }
+.pkmn-level { grid-area: b; }
+.pkmn-nature { grid-area: c; }
+
 .ability-hiddenpower-happiness { grid-area: 7 / 11 / 10 / 15; }
+
 .ot-tid-sid { grid-area: 7 / 16 / 10 / 19; }
-.attacks { grid-area: 11 / 6 / 14 / 15; }
+
+.pkmn-moves {
+  display: grid;
+  grid-area: 11 / 6 / 14 / 15;
+  grid-template-areas:
+    "a a a a - b b b b"
+    "c c c c - d d d d";
+}
+.pkmn-move-1 { grid-area: a; }
+.pkmn-move-2 { grid-area: b; }
+.pkmn-move-3 { grid-area: c; }
+.pkmn-move-4 { grid-area: d; }
+
 .ivs { grid-area: 15 / 4 / 22 / 10; }
+.iv-line {
+  display: grid;
+  grid-template-columns: 1fr 4fr 1fr;
+  grid-template-rows: 1fr 0.5fr;
+  align-items: center;
+}
 .evs { grid-area: 15 / 11 / 22 / 17; }
+
+.ev-line {
+  display: grid;
+  grid-template-columns: 1fr 4fr 1fr;
+  grid-template-rows: 1fr 0.5fr;
+  align-items: center;
+}
 
 </style>
