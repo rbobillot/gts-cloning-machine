@@ -355,7 +355,13 @@ MigrationBackup/
 
 # Pokemon Fake GTS
 *.pkm
+statlog.txt
 Pokemon/
 
 # Python
 *.pyc
+
+# Docker
+gts-db/
+gts-db/pgdata/
+pgdata/
