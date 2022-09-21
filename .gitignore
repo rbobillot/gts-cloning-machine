@@ -357,6 +357,7 @@ MigrationBackup/
 *.pkm
 Pokemon/
 statlog.txt
+spoof_addr.txt
 
 # Python
 *.pyc
