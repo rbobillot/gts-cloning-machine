@@ -1,5 +1,5 @@
 from array import array
-from namegen import namegen
+from src.namegen import namegen
 
 
 def statread(pkm):

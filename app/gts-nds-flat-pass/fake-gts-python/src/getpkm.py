@@ -6,17 +6,17 @@
 #
 # --Infinite Recursion
 
-from pokehaxlib import *
-from pkmlib import decode
+from src.pokehaxlib import *
+from src.pkmlib import decode
 from sys import argv, exit
-from string import uppercase, lowercase, digits
+from string import digits
 from random import sample
 from time import sleep
 from base64 import b64decode
 from binascii import hexlify
 from array import array
-from namegen import namegen
-from stats import statread
+from src.namegen import namegen
+from src.stats import statread
 from os import mkdir
 import os.path
 import subprocess
@@ -56,13 +56,13 @@ def save(path, data):
         fullpath = os.path.normpath('Pokemon' + os.sep + path)
         saved = True
         if os.path.isfile(fullpath):
-            print '%s already exists! Delete?' % path
-            response = raw_input().lower()
+            print(f'{path} already exists! Delete?')
+            response = input().lower()
             if response != 'y' and response != 'yes':
-                print 'Enter new filename: (press enter to cancel save) '
-                path = raw_input()
+                print('Enter new filename: (press enter to cancel save) ')
+                path = input()
                 if path == '':
-                    print 'Not saved.',
+                    print('Not saved.')
                     return
                 if not path.strip().lower().endswith('.pkm'):
                     path += '.pkm'
@@ -71,13 +71,13 @@ def save(path, data):
     with open(fullpath, 'wb') as f:
         f.write(data)
 
-    print '%s saved successfully.' % path,
+    print(f'{path} saved successfully.')
 
 
 def getpkm():
     token = 'c9KcX1Cry3QKS2Ai7yxL6QiQGeBGeQKR'
     sent = False
-    print 'Ready to receive from NDS'
+    print('Ready to receive from NDS')
     while not sent:
         sock, req = getReq()
         a = req.action
@@ -86,7 +86,7 @@ def getpkm():
             sendResp(sock, token)
         elif a == 'info':
             sendResp(sock, '\x01\x00')
-            print 'Connection Established.'
+            print('Connection Established.')
         elif a == 'setProfile':
             sendResp(sock, '\x00' * 8)
         elif a == 'result':
@@ -97,7 +97,7 @@ def getpkm():
             sendResp(sock, '')
         elif a == 'post':
             sendResp(sock, '\x0c\x00')
-            print 'Receiving Pokemon...'
+            print('Receiving Pokemon...')
             data = req.getvars['data']
             bytes = b64decode(data.replace('-', '+').replace('_', '/'))
             decrypt = makepkm(bytes)

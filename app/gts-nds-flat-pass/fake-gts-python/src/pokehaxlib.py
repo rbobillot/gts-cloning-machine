@@ -1,7 +1,7 @@
 import socket
 import sys
 import time
-import thread
+import _thread
 
 
 class Request:
@@ -92,7 +92,7 @@ def dnsspoof():
     s = socket.socket()
     s.connect((dns_server, 53))
     me = "".join(chr(int(x)) for x in s.getsockname()[0].split("."))
-    print "Please set your DS's DNS server to", s.getsockname()[0]
+    print("Please set your DS's DNS server to", s.getsockname()[0])
     dnsserv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     dnsserv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     dnsserv.bind(("0.0.0.0", 53))
@@ -102,8 +102,9 @@ def dnsspoof():
         s.connect((dns_server, 53))
         s.send(r[0])
         rr = s.recv(512)
-        if "gamestats2" in rr:
-            rr = rr[:-4]+me
+        # print(rr)
+        if "gamestats2" in str(rr):
+            rr = rr[:-4] + bytes(me, "utf-8")
         dnsserv.sendto(rr, r[1])
 
 
@@ -113,7 +114,7 @@ log = None
 
 def initServ(logfile=None):
     global serv, log
-    thread.start_new_thread(dnsspoof, ())
+    _thread.start_new_thread(dnsspoof, ())
     serv = socket.socket()
     serv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     serv.bind(("0.0.0.0", 80))

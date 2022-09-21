@@ -19,7 +19,7 @@ class makerand:
 
 
 def encode(pkm):
-    s = list(struct.unpack("IHH"+"H"*(len(pkm)/2-4), pkm))
+    s = list(struct.unpack("IHH"+"H"*int(len(pkm)/2-4), pkm))
     shift = ((s[0] >> 0xD & 0x1F) % 24)
     order = [ord(i) for i in shiftind[4*shift:4*shift+4]]
     shifted = s[:3]
@@ -34,11 +34,11 @@ def encode(pkm):
         rand = makerand(shifted[0])
         for i in range(67, len(shifted)):
             shifted[i] ^= rand()
-    return struct.pack("IHH"+"H"*(len(pkm)/2-4), *shifted)
+    return struct.pack("IHH"+"H"*int(len(pkm)/2-4), *shifted)
 
 
 def decode(bin):
-    shifted = list(struct.unpack("IHH"+"H"*(len(bin)/2-4), bin))
+    shifted = list(struct.unpack("IHH"+"H"*int(len(bin)/2-4), bin))
     rand = makerand(shifted[2])
     for i in range(3, 67):
         shifted[i] ^= rand()
@@ -53,4 +53,4 @@ def decode(bin):
     for i in range(4):
         s += shifted[3+16*order.index(i):19+16*order.index(i)]
     s += shifted[67:]
-    return struct.pack("IHH"+"H"*(len(bin)/2-4), *s)
+    return struct.pack("IHH"+"H"*int(len(bin)/2-4), *s)

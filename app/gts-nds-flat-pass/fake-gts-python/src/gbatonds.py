@@ -1,8 +1,8 @@
-import namegen
-import stats
+import src.namegen
+import src.stats
 from array import array
 from datetime import date
-from boxtoparty import makeparty
+from src.boxtoparty import makeparty
 
 
 def makends(gba):
@@ -21,7 +21,8 @@ def makends(gba):
 
     gend = genderbyte(species, pid)
     forme = form(species, gend, pid)
-    nicknamed = namegen.namegen(nickname) != stats.species.get(species).upper()
+    nicknamed = src.namegen.namegen(
+        nickname) != src.stats.species.get(species).upper()
     ability = abilities.get(species)
 
     species = chr(species & 0xff) + chr((species >> 8) & 0xff)
