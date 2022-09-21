@@ -1,5 +1,8 @@
 version: '3.8'
 
+# TODO: remove this file, it should not be used anymore
+#       we should rather use the main docker-compose.yml file
+
 services:
   web:
     build: .

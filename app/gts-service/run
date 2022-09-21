@@ -1,4 +1,0 @@
-#!/bin/bash
-
-# This script is used to start the GTS service.
-uvicorn app.main:app --reload

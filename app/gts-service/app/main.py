@@ -18,9 +18,9 @@ async def get_pokemon():
     return await Pokemon.objects.all()
 
 
-@app.get("/pokemon/{pokemon_id}")
-async def get_pokemon(pokemon_id: UUID):
-    return await Pokemon.objects.get(id=pokemon_id)
+@app.get("/pokemon/{id}")
+async def get_pokemon(id: UUID):
+    return await Pokemon.objects.get(id=id)
 
 
 @app.post("/pokemon/")
@@ -29,16 +29,16 @@ async def create_pokemon(pokemon: Pokemon):
     return pokemon
 
 
-@app.put("/pokemon/{pokemon_id}")
-async def update_pokemon(pokemon_id: UUID, pokemon: Pokemon):
-    await Pokemon.objects.get(id=pokemon_id)
+@app.put("/pokemon/{id}")
+async def update_pokemon(id: UUID, pokemon: Pokemon):
+    await Pokemon.objects.get(id=id)
     await pokemon.save()
     return pokemon
 
 
-@app.delete("/pokemon/{pokemon_id}")
-async def delete_pokemon(pokemon_id: UUID):
-    pokemon = await Pokemon.objects.get(id=pokemon_id)
+@app.delete("/pokemon/{id}")
+async def delete_pokemon(id: UUID):
+    pokemon = await Pokemon.objects.get(id=id)
     await pokemon.delete()
     return {"status": "ok"}
 
