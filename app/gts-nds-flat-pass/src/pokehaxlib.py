@@ -91,8 +91,18 @@ def dnsspoof():
     dns_server = "178.62.43.212"  # This is the unofficial pkmnclassic.net server
     s = socket.socket()
     s.connect((dns_server, 53))
-    me = "".join(chr(int(x)) for x in s.getsockname()[0].split("."))
-    print "Please set your DS's DNS server to", s.getsockname()[0]
+    spoof_addr = s.getsockname()[0]
+    me = "".join(chr(int(x)) for x in spoof_addr.split("."))
+    print "Please set your DS's DNS server to", spoof_addr
+
+    """
+    Save the spoof_dns_addr to a file,
+    so it can be shared through the networks and requested by the clients
+    """
+    f = open("spoof_addr.txt", "w")
+    f.write(spoof_addr)
+    f.close()
+
     dnsserv = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     dnsserv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     dnsserv.bind(("0.0.0.0", 53))
@@ -118,7 +128,6 @@ def initServ(logfile=None):
     serv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     serv.bind(("0.0.0.0", 80))
     serv.listen(5)
-
     if logfile:
         log = open(logfile, 'w')
 

@@ -1,0 +1,103 @@
+#!/usr/bin/python
+
+# A script that acts as the GTS, for sending and receiving pokemon between a
+# retail cart and a PC. Credit goes to LordLandon and his sendpkm script, as
+# well as the description of the GTS protocol from
+# http://projectpokemon.org/wiki/GTS_protocol
+#
+# - Infinite Recursion
+
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from src import gtsvar
+from src.pokehaxlib import initServ
+from src.getpkm import getpkm
+from src.sendpkm import sendpkm
+from platform import system
+from sys import argv, exit
+from time import sleep
+import os
+import json
+import threading
+
+s = system()
+if s == 'Linux':
+    if os.getuid() != 0:
+        print 'Program must be run as superuser. Enter your password below',
+        print 'if prompted.'
+        os.system('sudo ' + argv[0] + ' root')
+        exit(0)
+
+print gtsvar.version
+
+initServ()
+sleep(1)
+
+
+def get_spoof_addr():
+    f = open('spoof_addr.txt', 'r')
+    addr = f.read()
+    f.close()
+    return addr
+
+
+API_PORT_NUMBER = 8080
+
+
+class handleRoutes(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if (self.path == '/'):
+            return self.sendResponse('{"status": "ok"}', 200, 'application/json')
+        if (self.path.startswith('/')):
+            if (self.path.endswith('status')):
+                return self.sendResponse(
+                    '{"is_running": true, "addr": "%s"}' % (
+                        "Running on " + get_spoof_addr()), 200, 'application/json')
+            if (self.path.endswith('receive')):
+                getpkm()
+                return self.sendResponse('{"action": "receive"}', 200, 'application/json')
+        else:
+            return self.sendResponse('Not found.', 404, 'text/plain')
+
+    def do_POST(self):
+        if (self.path.startswith('/')):
+            if (self.path.endswith('send')):
+                body = self.rfile.read(int(self.headers['Content-Length']))
+                pkm_data_b64 = json.loads(body).get('raw_pkm_data')
+                pkm = pkm_data_b64.decode('base64')
+
+                """
+                Send the pokemon to the GTS, asynchronously.
+                Calling sendpkm() directly will block the server.
+                It must be called in a separate thread.
+
+                sendpkm should tell if the pokemon was sent successfully or not,
+                via socketio or something.
+                """
+                #t = threading.Thread(target=sendpkm, args=(pkm,))
+                # t.start()
+
+                # must be removed in production (the call must be asynchronous)
+                sendpkm(pkm)
+
+                return self.sendResponse('{"action": "sent", "data": "%s"}' % pkm_data_b64, 200, 'application/json')
+
+    def sendResponse(self, res, status, type):
+        self.send_response(status)
+        self.send_header('Content-type', type)
+        self.end_headers()
+        # Send the html message
+        self.wfile.write(res)
+        return
+
+
+try:
+    # Create a web server and define the handler to manage the incoming requests
+    server = HTTPServer(('', API_PORT_NUMBER), handleRoutes)
+    print 'Started http server on port ', API_PORT_NUMBER
+    # Wait forever for incoming http requests
+    server.serve_forever()
+
+except KeyboardInterrupt:
+    print '\nServer ended via Keyboard Interrupt.'
+    server.socket.close()
+    exit(0)
