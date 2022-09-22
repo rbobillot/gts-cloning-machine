@@ -357,6 +357,7 @@ MigrationBackup/
 *.pkm
 statlog.txt
 Pokemon/
+statlog.txt
 
 # Python
 *.pyc
