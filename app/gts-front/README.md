@@ -1,4 +1,4 @@
-#GTS-FRONT
+# GTS-FRONT
 Frontend interface for the GTS service.
 
 ---
@@ -15,59 +15,16 @@ Flow:
 
 ---
 
-#NDS to Fake-GTS
-```
-+-----------------------------------------------------------------------------+
-|                                                                             |
-|      Fake-GTS running: XX.XX.XX.XX               NDS Status: CONNECTED  <- - - - -  updated on NDS join/leave (via CWF)
-|                                                                             | 
-+-----------------------------------------------------------------------------+
-|                                                                             |
-|                                                                             |
-|   Mode:  NDS (Gen4) => Fake-GTS  <- - - - - - - - - - - - - - - - - - - - - - - - - dropdown menu (updating the window)
-|          ----------------------                                             |
-|                                                                             |
-|   +------+ +----------------------------------------------------+ +------+  |
-|   | NDS  | |/////////////////////////////////////////////       | | GTS  |  |
-|   |      | |/////////////////////// 90% /////////////////       | |      |  |
-|   | Logo | |/////////////////////////////////////////////       | | Logo |  |
-|   +------+ +----------------------------------------------------+ +------+  |
-|                                                                             |
-|                                                                             |
-|   Pokemon to Store:                                                         |
-|                                                                             |
-|   +-------+  <- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  actual sprite (must shiny if the Pokemon is shiny)
-|   | Pkmn  |  Name:  Pikachu   Gender:  Male                                 |
-|   |       |  Index: #25       Ability: Static                               |
-|   | icon +-+ Level: 1         Nature:  Timid                                |
-|   +------|O| <- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  held object icon
-|          +-+                                                                |
-|                                                                             |
-|    OT: B,  ID: 39771,  Secret ID: 39765                               \     |
-|    Holding: Rare Candy,  Happiness: 73                                 |    |
-|    Hidden Power: Psychic-type, 42 Base Power                           |    |
-|                                                                        |    |
-|    Attacks: +------------+--------+                                    |    |
-|             | Nasty Plot | Growl  |                                    |- - - - - -  Various tables to give
-|             +------------+--------+                                    |    |        clear information
-|             | Charm      | Nuzzle |                                    |    |
-|             +------------+--------+                                    |    |        (Moves must have a simple design
-|                                                                        |    |         to display their Type,
-|    IVs: HP  27, Atk  10, Def  13, SpA  28, SpD   7, Spe  25            |    |         and rather they are Phyiical or Special)
-|    EVs: HP   0, Atk   0, Def   0, SpA   0, SpD   0, Spe   0, Total 0  /     |
-|                                                                             |
-|                                                                             |
-+-----------------------------------------------------------------------------+
-
-```
+# Fake-GTS to NDS
+![gts-to-nds-grid](../../misc/GTS2NDS-grid.jpg)
 
 ---
 
-#Fake-GTS to NDS
+# NDS to Fake-GTS
 ```
 +-----------------------------------------------------------------------------+
 |                                                                             |
-|      Fake-GTS running: XX.XX.XX.XX               NDS Status: CONNECTED  <- - - - -  updated on NDS join/leave (via CWF)
+|    Fake-GTS Status: Running on XX.XX.XX.XX         NDS Status: CONNECTED    |
 |                                                                             | 
 +-----------------------------------------------------------------------------+
 |                                                                             |
