@@ -497,7 +497,8 @@ Thumbs.db
 # Pokemon Fake GTS
 *.pkm
 Pokemon/
-*/**/statlog.txt
+statlog.txt
+spoof_addr.txt
 
 # Python
 *.pyc
