@@ -1,7 +1,7 @@
-#WebApp
+# WebApp
 ---
 
-#How to run the services
+# How to run the services
 ```
 docker-compose up
 ```
