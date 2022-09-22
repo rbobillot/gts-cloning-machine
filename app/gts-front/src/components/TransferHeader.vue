@@ -1,59 +1,47 @@
-<!-- USELESS FOR NOW -->
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from 'vue';
+import axios from 'axios';
+import { useFlatpassStore } from '../stores/flatpassStore';
 
-const fgtsStatus = ref({running: false, host: ""})
-const ndsStatus = ref({connected: false})
+const fpStore = useFlatpassStore()
 
-const showFgtsStatus = () => {
-  if (fgtsStatus.value.running) {
-    return "Running on " + fgtsStatus.value.host
-  } else {
-    return "Not running"
-  }
+const gtsServiceUrl = (endpoint: string) => {
+  return `http://localhost:8081/${endpoint}`
 }
 
-const showNdsStatus = () => {
-  if (ndsStatus.value.connected) {
-    return "Connected"
-  } else {
-    return "Not connected"
-  }
+const ndsStatus = ref({isConnected: false, status: "Not Connected"}) // --> handle with SocketIO ?
+
+const fetchFlatpassStatus = () => {
+  axios.get(gtsServiceUrl('flatpass-status'))
+    .then(response => {
+      fpStore.setFgtsStatus(response.data.isRunning ? response.data : {isRunning: false, status: "Not Running"})
+    })
+    .catch(error => {
+      console.log(error)
+    })
 }
+
+fetchFlatpassStatus() // handle refresh via socket.io, rather than page refresh
 
 </script>
 
 <template>
 
-  <div class="fgts-status">
-    GTS Status: {{showFgtsStatus()}}
-  </div>
-
-  <div class="transfer-status">
-    Transfer
-  </div>
-
-  <div class="nds-status">
-    NDS Status: {{showNdsStatus()}}
-  </div>
+<div class="fgts-status">
+  <LvBadge :color="fpStore.isFgtsRunning ? 'info' : 'danger'" @click="fetchFlatpassStatus()">
+    GTS Status: {{fpStore.getFgtsStatus}}
+  </LvBadge>
+</div>
+<div class="nds-status">
+  <LvBadge v-if="ndsStatus.isConnected" :color="ndsStatus.isConnected ? 'info' : 'danger'">NDS Status: {{ndsStatus.status}}</LvBadge>
+</div>
 
 </template>
 
 <style scoped>
 
-.fgts-status {
-  grid-column: 2 / 3;
-  grid-row: 2 / 3;
-}
-
-.transfer-status {
-  grid-column: 5 / 15;
-  grid-row: 2 / 3;
-}
-
-.nds-status {
-  grid-column: 17 / 18;
-  grid-row: 2 / 3;
-}
+.fgts-status { grid-area: 1 / 1 / 2 / 7; }
+.nds-status { grid-area: 1 / 14 / 2 / 19; }
+/*.transfer-status { grid-area: 1 / 5 / 3 / 16; }*/
 
 </style>

@@ -93,7 +93,7 @@ def dnsspoof():
     s.connect((dns_server, 53))
     spoof_addr = s.getsockname()[0]
     me = "".join(chr(int(x)) for x in spoof_addr.split("."))
-    print "Please set your DS's DNS server to", spoof_addr
+    print("Please set your DS's DNS server to %s" % spoof_addr)
 
     """
     Save the spoof_dns_addr to a file,

@@ -63,9 +63,8 @@ def sendpkm(pkm):
             sendResp(sock, bin)
         elif a == 'delete':
             sendResp(sock, '\x01\x00')
+            print 'Pokemon sent successfully.',
             sent = True
-
-    print 'Pokemon sent successfully.',
 
 
 def sendpkm_from_input_path():

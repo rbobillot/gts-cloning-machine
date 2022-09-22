@@ -12,6 +12,7 @@
     "axios": "^0.27.2",
     "light-icons": "^1.0.10",
     "lightvue": "^1.4.9",
+    "pinia": "^2.0.22",
     "vue": "^3.2.37",
     "vue-select": "^4.0.0-beta.5"
   },

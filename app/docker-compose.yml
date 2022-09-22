@@ -1,38 +1,65 @@
-version: '3'
+version: '3.8'
+
 services:
+  gts-front:
+    container_name: gts-front
+    build: gts-front
+    image: node:lts
+    command: 'npm run dev'
+    ports:
+      - 8080:8080
+    tty: true
+    depends_on:
+      - gts-service
+  gts-service:
+    container_name: gts-service
+    build: gts-service
+    command: 'uvicorn app.main:app --host 0.0.0.0 --port 8081'
+    restart: "on-failure"
+    ports:
+      - 8081:8081
+    environment:
+      - DATABASE_URL=postgresql://fgtsdb:fgtsdb@gts-db:5432/fgtsdb
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - gts-db
+  # FOR A REASON I DON'T UNDERSTAND, THIS IS WORKING SLOWLY
+  # EACH REQUEST TAKES MANY SECONDS TO GET A RESPONSE
+  # HENSE, THE gts-nds-flat-pass WILL RUN LOCALLY, OUTSIDE OF A CONTAINER
+  # IT WILL BE REQUESTED BY THE gts-service USING host.docker.internal
+  # Also, the communication between NDS and a Dockerized flatpass seems to be buggy
+  # gts-nds-flat-pass:
+  #   container_name: gts-nds-flat-pass
+  #   build: gts-nds-flat-pass
+  #   command: './flat-pass'
+  #   restart: "on-failure"
+  #   volumes:
+  #     - gts-nds-flat-pass:/gts-nds-flat-pass
+  #   ports:
+  #     - 80:80
+  #     - 8082:8082
+  #   environment:
+  #     - PUBLIC_HOST=$DOCKER_GATEWAY_HOST
   gts-db:
     container_name: gts-db
     image: postgres:latest
-    ports:
-      - "5432:5432"
     volumes:
-      - ./gts-service/gts-db/pgdata:/pgdata
-      # store locally the Dockerized postgres data
-    env_file:
-      - gts-service/gts-service.env
-      # use env vars from a common file, to setup postgres DB
+      - gts-db-data:/var/lib/postgresql/data/
+    expose:
+      - 5432
     environment:
-      - PGDATA=/pgdata
+      - POSTGRES_USER=fgtsdb
+      - POSTGRES_PASSWORD=fgtsdb
+      - POSTGRES_DB=fgtsdb
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5432"]
+      test: [ "CMD", "curl", "-f", "http://localhost:5432" ]
       interval: 30s
       timeout: 10s
       retries: 5
       # check if 'gts-db' is properly running, to handle 'gts-service' start/restart (on docker-compose up)
+
+volumes:
   gts-service:
-    container_name: gts-service
-    build: gts-service
-    ports:
-      - "9090:9090"
-    env_file:
-      - gts-service/gts-service.env
-    restart: "on-failure"
-      # restart the service if a start failure happened (unreachable DB, for example)
-    depends_on:
-      # waits for 'gts-db' to run before running 'gts-service' container
-      - gts-db
-    links:
-      - gts-db
-    volumes:
-      - ./gts-service:/home/gts-service
-      # copies current dir to container, according to this project packages structure
+  gts-nds-flat-pass:
+  gts-db-data:

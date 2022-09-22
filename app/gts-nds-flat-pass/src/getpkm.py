@@ -12,12 +12,14 @@ from sys import argv, exit
 from string import uppercase, lowercase, digits
 from random import sample
 from time import sleep
-from base64 import b64decode
+from base64 import b64decode, b64encode, urlsafe_b64encode
 from binascii import hexlify
 from array import array
 from namegen import namegen
 from stats import statread
 from os import mkdir
+from urllib import urlencode
+import urllib2
 import os.path
 import subprocess
 import platform
@@ -74,7 +76,15 @@ def save(path, data):
     print '%s saved successfully.' % path,
 
 
-def getpkm():
+def http_post(url, post_data):
+    req = urllib2.Request(url, post_data)
+    response = urllib2.urlopen(req)
+    content = response.read()
+    response.close()
+    return content
+
+
+def getpkm(create_pkm_url):
     token = 'c9KcX1Cry3QKS2Ai7yxL6QiQGeBGeQKR'
     sent = False
     print 'Ready to receive from NDS'
@@ -103,6 +113,10 @@ def getpkm():
             decrypt = makepkm(bytes)
             filename = namegen(decrypt[0x48:0x5e])
             filename += '.pkm'
+            http_post(
+                url=create_pkm_url,
+                post_data=str(b64encode(decrypt)))
             save(filename, decrypt)
-            statread(decrypt)
+            # statread(decrypt)
             sent = True
+            break
