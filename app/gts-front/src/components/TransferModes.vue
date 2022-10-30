@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { Ref, ref } from 'vue'
 import axios from 'axios';
 import 'vue-select/dist/vue-select.css';
+import { useEventManagerStore } from '../stores/eventManagerStore'
 import { useFlatpassStore } from '../stores/flatpassStore';
 import { useTransferStore } from '../stores/transferStore';
 
+const emStore = useEventManagerStore()
 const fpStore = useFlatpassStore()
 const tStore = useTransferStore()
 
@@ -13,8 +14,10 @@ const gtsServiceUrl = (endpoint: string) => {
 }
 
 const transferModes = [
-  { mode: { pf: 'nds-gts', gen: 4 }, desc : "NDS (Gen 4) to GTS" },
-  { mode: { pf: 'gts-nds', gen: 4 }, desc : "GTS to NDS (Gen 4)" },
+  { mode: { pf: 'nds-gts', gen: 4 }, desc: "NDS (Gen 4) to GTS" },
+  { mode: { pf: 'gts-nds', gen: 4 }, desc: "GTS to NDS (Gen 4)" },
+  // { mode: { pf: 'nds-gts', gen: 5 }, desc: "NDS (Gen 5) to GTS" },
+  // { mode: { pf: 'gts-nds', gen: 5 }, desc: "GTS to NDS (Gen 5)" },
 ]
 
 const transferablesSortByOptions = [
@@ -23,50 +26,42 @@ const transferablesSortByOptions = [
   { value: 'level', label: 'Level' },
 ]
 
-const transferNdsToGts = () => {
-  axios
-    .get(gtsServiceUrl('flatpass-receive'))
-    .then((response) => {
-      tStore.setTransferPending(false)
-      console.log(response)
-    })
-    .catch((error) => {
-      tStore.setTransferPending(false)
-      console.log(error)
-    })
-}
-
-const transferGtsToNds = () => {
-  const { ['optionLabelName']: _, ...pkm } = tStore.selectedPkmn // remove optionLabelName prop from selectedPkmn
-
-  axios
-    .post(gtsServiceUrl('flatpass-send'), pkm)
-    .then((response) => {
-      tStore.setTransferPending(false)
-      console.log(response)
-    })
-    .catch((error) => {
-      tStore.setTransferPending(false)
-      console.log(error)
-    })
-}
-
 const transferPokemon = () => {
-  // dummy transfer pending
   tStore.setTransferPending(true)
-  setTimeout(() => {
-    tStore.setTransferPending(false)
-  }, 1000)
-  if (tStore.selectedMode.pf === 'nds-gts') {
-    transferNdsToGts()
-  } else if (tStore.selectedMode.pf === 'gts-nds') {
-    transferGtsToNds()
-  }
+
+  // removing optionLabelName prop from selectedPkmn
+  // optionLabelName is only used by lv-dropdown to display the selected option
+  // if tStore.selectedPkmn = {}, then pkm = {}
+  const { ['optionLabelName']: _, ...pkm } = tStore.selectedPkmn
+
+  const pf = tStore.selectedMode?.pf
+  const gen = tStore.selectedMode?.gen
+
+  axios
+    .post(gtsServiceUrl(`flatpass/transfer?transfer_platform=${pf}&gen=${gen}`), pkm)
+    .then((response) => {
+      console.log(response)
+    })
+    .catch((error) => {
+      tStore.setTransferPending(false)
+      console.log(error)
+    })
+
+    /*{
+      // TODO: update gts-service to accept a more complex request (and update database of course)
+
+      .post(gtsServiceUrl('flatpass/transfer', {
+        id: tStore.transferId // not sure of the transferId generation yet
+        date: new Date().toISOString(),
+        platform: tStore.selectedMode?.pf,
+        gen: tStore.selectedMode?.gen,
+        pkm: pkm
+      }
+    */
 }
 
 const canTransfer = () => {
-  return (!fpStore.isFgtsRunning
-  // || !ndsStatus.value.isConnected
+  return (!fpStore.isFgtsRunnig // || !fpStore.isNdsConnected) ? false : true
   || !tStore.selectedMode
   || (!tStore.selectedPkmnId && tStore.isGtsToNds) 
   || tStore.isTransferPending)
@@ -103,6 +98,37 @@ const fetchTransferablePkmns = () => {
 }
 
 fetchTransferablePkmns()
+
+/* TODO: fetch pending transfers, when gts-service will support it
+
+  const fetchPendingTransfers = () => {
+    axios.get(gtsServiceUrl('flatpass/transfer/status'))
+      .then(response => {
+        tStore.setPendingTransfers(response.data.status)
+        tStore.setSelectedMode(response.data.mode)
+        tStore.setSelectedPkmn(response.data.selectedPkm)
+      })
+      .catch(error => {
+        console.log('cannot fetch pending transfers', error)
+      })
+  }
+
+  fetchPendingTransfer()
+*/
+
+emStore.getFrontSocket.on('flatpass-transfer', (datastr: string) => {
+  const data = JSON.parse(datastr) // TODO: handle data as object, rather than string
+
+  if (!data.status) return
+
+  // const platform = data.platform.toLowerCase()
+
+  if (data.status === "success") {
+    tStore.setTransferPending(false)
+  } else if (data.status === "error") {
+    tStore.setTransferPending(false)
+  }
+})
 
 </script>
 

@@ -3,4 +3,4 @@
 # export DOCKER_GATEWAY_HOST=$(hostname -I | awk '{print $1}')
 # docker-compose up --build
 
-docker-compose up --build gts-front gts-db gts-service
+docker-compose up --build gts-front gts-db gts-service gts-event-manager
