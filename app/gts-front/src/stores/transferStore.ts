@@ -14,22 +14,22 @@ export const useTransferStore = defineStore("transferStore", {
     },
     actions: {
         setMode(mode) {
-            this.transferMode = mode;
+            this.transferMode = mode
         },
         setPkmnId(id) {
-            this.pokemonId = id;
+            this.pokemonId = id
         },
         setReceivedPkmn(pkmn) {
-            this.receivedPokemon = pkmn;
+            this.receivedPokemon = pkmn
         },
         setTransferPending(isPending) {
-            this.isPending = isPending;
+            this.isPending = isPending
         },
         setTransferProgress(progress) {
-            this.progress = progress;
+            this.progress = progress
         },
         setTransferablePkmns(pokemons) {
-            this.transferablePokemons = pokemons;
+            this.transferablePokemons = pokemons
         },
         setTransferablePkmn(pokemon) {
             if (!pokemon) return
@@ -41,33 +41,35 @@ export const useTransferStore = defineStore("transferStore", {
             this.transferablePokemons.splice(index, 1, pokemon)
         },
         setTransferableSortBy(sortBy) {
-            this.transferableSortBy = sortBy;
+            this.transferableSortBy = sortBy
         },
     },
     getters: {
         selectedMode(): any {
-            return this.transferMode;
+            return this.transferMode
         },
         isGtsToNds(): boolean {
-            return this.selectedMode?.pf === "gts-nds";
+            return this.selectedMode?.pf === "gts-nds"
         },
         isNdsToGts(): boolean {
-            return this.selectedMode?.pf === "nds-gts";
+            return this.selectedMode?.pf === "nds-gts"
         },
         isTransferPending(): boolean {
-            return this.isPending;
+            return this.isPending
         },
         transferProgress(): number {
-            return this.progress;
+            return this.progress
         },
         selectedPkmnId(): string {
-            return this.pokemonId;
+            return this.pokemonId
         },
         transferablePkmns(): any[] {
-            return this.transferablePokemons;
+            return this.transferablePokemons
         },
         selectedPkmn(): any {
-            return this.transferablePkmns.find(pkmn => pkmn.id === this.selectedPkmnId);
+            const pkm = this.transferablePkmns.find(pkmn => pkmn.id === this.selectedPkmnId)
+
+            return pkm ? pkm : {}
         },
         receivedPkmn(): any {
             return this.receivedPokemon;

@@ -1,6 +1,8 @@
-from app.pkm_ser_de import pkm_to_json
 import httpx
+import logging
 import ormar
+import socketio
+
 from base64 import b64encode, b64decode
 from fastapi import FastAPI, HTTPException
 from fastapi.encoders import jsonable_encoder
@@ -8,10 +10,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from uuid import UUID
 
 from app.db import Pokemon, database
+from app.dto import FlatpassStatus, FlatpassTransfer, PlatformEnum, TransferPlatformEnum
+from app.pkm_ser_de import pkm_to_json
+from app.ws_events_handler import sio, connect_to_event_manager
 
-# FLATPASS_<HOST|PORT> will be used when flat-pass is dockerized
 FLATPASS_HOST = 'host.docker.internal'
 FLATPASS_PORT = '8082'
+
+logger = logging.getLogger("uvicorn")
 
 app = FastAPI(title="FakeGTS API",
               description="A fake GTS API, and a cloning machine", version="0.0.2")
@@ -27,53 +33,10 @@ app.add_middleware(
 
 
 @app.get("/health", include_in_schema=False)
-async def root():
+async def status():
     return {"status": "ok"}
 
-
-@app.get("/flatpass-status")
-async def flatpass_status():
-    """
-    Returns the status from the GTS flatpass
-    GTS flasspass is running on the computer's localhost
-    which is reached through the host.docker.internal
-    """
-    try:
-        return httpx.get(
-            f'http://{FLATPASS_HOST}:{FLATPASS_PORT}/status',
-            timeout=1.0).json()
-    except httpx.RequestError as exc:
-        return {"isRunning": False, "status": None}
-
-
-@app.get("/flatpass-receive")
-async def receive_pokemon_from_flatpass():
-    try:
-        return httpx.get(
-            f'http://{FLATPASS_HOST}:{FLATPASS_PORT}/receive',
-            timeout=None).json()
-    except httpx.RequestError as exc:
-        raise HTTPException(
-            status_code=500, detail="GTS flatpass is not running")
-
-
-@app.post("/flatpass-send")
-async def send_pokemon_to_flatpass(pokemon: Pokemon):
-    try:
-        httpx.post(
-            f'http://{FLATPASS_HOST}:{FLATPASS_PORT}/send',
-            json=jsonable_encoder(pokemon),
-            timeout=None)
-        # handle the case where a pokemon already exists with the same id
-        try:
-            await pokemon.save()
-        except:
-            print(f"Pokemon {pokemon.id} already exists")
-        return pokemon
-    except httpx.RequestError as exc:
-        raise HTTPException(
-            status_code=500, detail="GTS flatpass is not running")
-
+### Pokemon related endpoints ###
 
 @app.get("/pokemon")
 async def get_all_pokemon(name: str = None):
@@ -84,7 +47,6 @@ async def get_all_pokemon(name: str = None):
         return await Pokemon.objects.filter(name__icontains=name).all()
     return await Pokemon.objects.all()
 
-
 @app.get("/pokemon/{id}")
 async def get_pokemon(id: UUID):
     """
@@ -94,7 +56,6 @@ async def get_pokemon(id: UUID):
         return await Pokemon.objects.get(id=id)
     except ormar.exceptions.NoMatch:
         raise HTTPException(status_code=404, detail="Pokemon not found")
-
 
 @app.post("/pokemon", status_code=201)
 async def create_pokemon(pkm_data: Pokemon | str):
@@ -118,13 +79,11 @@ async def create_pokemon(pkm_data: Pokemon | str):
     await pokemon.save()
     return pokemon
 
-
 @app.put("/pokemon/{id}", status_code=201)
 async def update_pokemon(id: UUID, pokemon: Pokemon):
     # await Pokemon.objects.get(id=id)
     # await pokemon.save()
     return pokemon
-
 
 @app.delete("/pokemon/{id}", status_code=204)
 async def delete_pokemon(id: UUID):
@@ -135,6 +94,91 @@ async def delete_pokemon(id: UUID):
     except ormar.exceptions.NoMatch:
         raise HTTPException(status_code=404, detail="Pokemon not found")
 
+### Flatpass related endpoints ###
+
+@app.get("/flatpass/status")
+async def flatpass_status(platform: PlatformEnum):
+    try:
+        return httpx.get(
+            f'http://{FLATPASS_HOST}:{FLATPASS_PORT}/status/{platform}',
+            timeout=None).json()
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=500, detail="GTS flatpass is not running")
+
+@app.get("/flatpass/transfer/status", include_in_schema=False)
+async def transfer_status():
+    try:
+        return httpx.get(
+            f'http://{FLATPASS_HOST}:{FLATPASS_PORT}/transfer/status',
+            timeout=None).json()
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=500, detail="GTS flatpass is not running")
+
+@app.post("/flatpass/transfer")
+async def transfer_pokemon(pokemon: Pokemon | dict, transfer_platform: TransferPlatformEnum = None, gen: int = 4):
+    """
+    Platform can either be:
+    - gts-nds
+    - nds-gts
+    """
+    if transfer_platform is None:
+        raise HTTPException(status_code=400, detail="Missing platform")
+    if gen != 4:
+        raise HTTPException(status_code=400, detail=f"Gen {gen} if not supported yet")
+
+    try:
+        # If the pokemon is a dict, it is assumed to be an empty json object
+        if isinstance(pokemon, dict) and transfer_platform == TransferPlatformEnum.nds_gts:
+            httpx.post(
+                f'http://{FLATPASS_HOST}:{FLATPASS_PORT}/transfer/gen-{gen}/{transfer_platform}',
+                json={},
+                timeout=None)
+        elif isinstance(pokemon, Pokemon) and transfer_platform == TransferPlatformEnum.gts_nds:
+            httpx.post(
+                f'http://{FLATPASS_HOST}:{FLATPASS_PORT}/transfer/gen-{gen}/{transfer_platform}',
+                json=jsonable_encoder(pokemon),
+                timeout=None)
+            try:
+                await pokemon.save()
+            except:
+                logger.warning(f"Pokemon {pokemon.id} already exists")
+        else:
+            raise HTTPException(status_code=400, detail="Invalid data")
+        return pokemon
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=500, detail="GTS flatpass is not running")
+
+### Event-manager related endpoints ###
+
+@app.post("/event/flatpass/status")
+async def event_flatpass_status(data: FlatpassStatus):
+    """
+    Receives statuses:
+    - flatpass: started / stopped
+    - NDS: connected / disconnected (not handled yet)
+    and notifies the gts-event-manager via socketio
+    which will then notify the frontend
+    """
+    try:
+        await sio.emit('flatpass-status', data.json(), namespace='/gts-service')
+        return {"info": "notified statuses about flatpass to event-manager", "data": data.json()}
+    except socketio.exceptions.ConnectionError:
+        raise HTTPException(
+            status_code=500, detail="SocketIO connection error")
+
+@app.post("/event/flatpass/transfer")
+async def event_flatpass_transfer(data: FlatpassTransfer):
+    try:
+        await sio.emit('flatpass-transfer', data.json(), namespace='/gts-service')
+        return {"info": "notified nds-to-gts transfer status to event-manager", "data": data.json()}
+    except socketio.exceptions.ConnectionError:
+        raise HTTPException(
+            status_code=500, detail="SocketIO connection error")
+
+
 """
 DB startup / shutdown events handling
 """
@@ -142,6 +186,7 @@ DB startup / shutdown events handling
 
 @app.on_event("startup")
 async def startup():
+    await connect_to_event_manager()
     if not database.is_connected:
         await database.connect()
 

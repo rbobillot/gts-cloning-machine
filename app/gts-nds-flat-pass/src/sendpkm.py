@@ -4,28 +4,28 @@ from pokehaxlib import *
 from pkmlib import encode
 from boxtoparty import makeparty
 from gbatonds import makends
+from http_helper import http_post, notify_gts_service
 from sys import argv, exit
 from platform import system
 import os.path
 
-
-def sendpkm(pkm):
+def sendpkm(pkm, notify_transfer_url):
     token = 'c9KcX1Cry3QKS2Ai7yxL6QiQGeBGeQKR'
 
-    print 'Note: you must exit the GTS before sending a pkm'
+    print('Note: you must exit the GTS before sending a pkm')
 
     # Adding extra 100 bytes of party data
     if len(pkm) != 236 and len(pkm) != 136:
-        print 'Invalid filesize.'
+        print('Invalid filesize.')
         return
     if len(pkm) == 136:
-        print 'PC-Boxed Pokemon! Adding party data...',
+        print('PC-Boxed Pokemon! Adding party data...')
         pkm = makeparty(pkm)
-        print 'done.'
+        print('done.')
 
-    print 'Encoding!'
+    print('Encoding!')
     bin = encode(pkm)
-    print 'done.'
+    print('done.')
 
     # Adding GTS data to end of file
     bin += pkm[0x08:0x0a]  # id
@@ -43,7 +43,7 @@ def sendpkm(pkm):
 
     sent = False
     delete = False
-    print 'Ready to send; you can now enter the GTS...'
+    print('Ready to send; you can now enter the GTS...')
     while not sent:
         sock, req = getReq()
         print(req)
@@ -52,7 +52,7 @@ def sendpkm(pkm):
             sendResp(sock, token)
         elif a == 'info':
             sendResp(sock, '\x01\x00')
-            print 'Connection Established.'
+            print('Connection Established.')
         elif a == 'setProfile':
             sendResp(sock, '\x00' * 8)
         elif a == 'post':
@@ -63,15 +63,22 @@ def sendpkm(pkm):
             sendResp(sock, bin)
         elif a == 'delete':
             sendResp(sock, '\x01\x00')
-            print 'Pokemon sent successfully.',
+            print('Pokemon sent successfully.')
             sent = True
+
+            status = """{
+                "status": "success",
+                "transfer_platform": "gts-nds",
+                "details": "Pokemon transferred to NDS"
+            }"""
+            notify_gts_service("transfer status", status, notify_transfer_url)
 
 
 def sendpkm_from_input_path():
     token = 'c9KcX1Cry3QKS2Ai7yxL6QiQGeBGeQKR'
 
-    print 'Note: you must exit the GTS before sending a pkm'
-    print 'Enter the path or drag the pkm file here'
+    print('Note: you must exit the GTS before sending a pkm')
+    print('Enter the path or drag the pkm file here')
 
     path = raw_input().strip()
     path = os.path.normpath(path)

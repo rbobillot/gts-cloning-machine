@@ -9,6 +9,7 @@
 
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from src import gtsvar
+from src.http_helper import http_post, notify_gts_service
 from src.pokehaxlib import initServ
 from src.getpkm import getpkm
 from src.sendpkm import sendpkm
@@ -21,19 +22,28 @@ import thread
 
 if system() == 'Linux':  # or 'Darwin' # (Mac OSX, but sudo doesn't seem to me needed)
     if os.getuid() != 0:
-        print 'Program must be run as superuser. Enter your password below',
-        print 'if prompted.'
+        print('Program must be run as superuser. Enter your password below')
+        print('if prompted.')
         os.system('sudo ' + argv[0] + ' root')
         exit(0)
 
 print(gtsvar.version)
 
 initServ()
-sleep(1)
+sleep(1) # let the server take its time to start
+
+### GTS Service API infos ###
 
 GTS_SERVICE_HOST = "localhost"
 GTS_SERVICE_PORT = 8081
 
+GTS_SERVICE_BASE_URL = "http://%s:%s" % (GTS_SERVICE_HOST, GTS_SERVICE_PORT)
+GTS_SERVICE_NOTIFY_FLATPASS_STATUS_URL = GTS_SERVICE_BASE_URL + "/event/flatpass/status"
+GTS_SERVICE_NOTIFY_TRANSFER_STATUS_URL = GTS_SERVICE_BASE_URL + "/event/flatpass/transfer"
+
+### FlapPass API infos ###
+
+API_PORT_NUMBER = 8082
 
 def get_spoof_addr():
     """
@@ -49,41 +59,68 @@ def get_spoof_addr():
     f.close()
     return os.getenv("PUBLIC_HOST", addr)
 
+def get_nds_status(status): # status := "connected" | "not connected"
+    platform = 'nds'
+    host = 'ip.xx.xx.xx'
+    port = 80
+    return '{ }'
 
-API_PORT_NUMBER = 8082
+def get_flatpass_status(status): # status := "running" | "not running"
+    platform = 'flatpass'
+    host = get_spoof_addr()
+    port = API_PORT_NUMBER
+    return """{
+        "status" : "%s",
+        "platform" : "%s",
+        "connection_details" : {
+            "host" : "%s",
+            "port" : "%d"
+        }
+    }""" % (status, platform, host, port)
 
+def transfer_from_gts_to_nds(self):
+    body = self.rfile.read(int(self.headers['Content-Length']))
+    pkm_data_b64 = json.loads(body).get('raw_pkm_data')
+    pkm = pkm_data_b64.decode('base64')
+    gts_service_transfer_event_url = GTS_SERVICE_BASE_URL + "/event/flatpass/transfer"
+
+    thread.start_new_thread(sendpkm, (pkm, gts_service_transfer_event_url,))
+
+    return self.sendResponse('{"action": "send"}', 200, 'application/json')
+
+def transfer_from_nds_to_gts(self):
+    gts_service_create_pkm_url = GTS_SERVICE_BASE_URL + "/pokemon"
+    gts_service_transfer_event_url = GTS_SERVICE_BASE_URL + "/event/flatpass/transfer"
+    
+    thread.start_new_thread(getpkm, (gts_service_create_pkm_url, gts_service_transfer_event_url,))
+
+    return self.sendResponse('{"action": "receive"}', 200, 'application/json')
+
+### ROUTING ###
 
 class handleRoutes(BaseHTTPRequestHandler):
     def do_GET(self):
         if (self.path == '/'):
             return self.sendResponse('{"status": "ok"}', 200, 'application/json')
-        if (self.path.startswith('/')):
-            if (self.path.endswith('status')):
-                return self.sendResponse(
-                    '{"isRunning": true, "status": "%s"}' % (
-                        "Running on " + get_spoof_addr()), 200, 'application/json')
-            if (self.path.endswith('receive')):
-                create_pkm_url = "http://%s:%s/pokemon" % (GTS_SERVICE_HOST, GTS_SERVICE_PORT)
-                # for some reason, the result of the sendpkm function is not logged
-                # to the console, a solution must be found
-                thread.start_new_thread(getpkm, (create_pkm_url,))
-
-                return self.sendResponse('{"action": "receive"}', 200, 'application/json')
+        elif (self.path.startswith('/status')):
+            if (self.path.endswith('/flatpass')):
+                return self.sendResponse(get_flatpass_status("running"), 200, 'application/json')
+            elif (self.path.endswith('/nds')):
+                raise self.sendResponse("Not implemented yet.", 501, 'text/plain')
         else:
             return self.sendResponse('Not found.', 404, 'text/plain')
 
     def do_POST(self):
-        if (self.path.startswith('/')):
-            if (self.path.endswith('send')):
-                body = self.rfile.read(int(self.headers['Content-Length']))
-                pkm_data_b64 = json.loads(body).get('raw_pkm_data')
-                pkm = pkm_data_b64.decode('base64')
-
-                # for some reason, the result of the sendpkm function is not logged
-                # to the console, a solution must be found
-                thread.start_new_thread(sendpkm, (pkm,))
-
-                return self.sendResponse('{"action": "send"}', 200, 'application/json')
+        if (self.path.startswith('/transfer/gen-4')):
+            if (self.path.endswith('/gts-nds')):
+                return transfer_from_gts_to_nds(self)
+            elif (self.path.endswith('/nds-gts')):
+                return transfer_from_nds_to_gts(self)
+        elif (self.path.startswith('/transfer/gen-5')):
+            # TODO: Actually, Gen 5 might work, but I have to test it
+            return self.sendResponse('Gen 5, not handled yet.', 404, 'text/plain')
+        else:
+            return self.sendResponse('Not found.', 404, 'text/plain')
 
     def sendResponse(self, res, status, type):
         self.send_response(status)
@@ -93,15 +130,32 @@ class handleRoutes(BaseHTTPRequestHandler):
         self.wfile.write(res)
         return
 
-
 try:
     # Create a web server and define the handler to manage the incoming requests
     server = HTTPServer(('', API_PORT_NUMBER), handleRoutes)
     print('Started http server on port %d' % API_PORT_NUMBER)
+    try:
+        notify_gts_service("flatpass status", get_flatpass_status("running"), GTS_SERVICE_NOTIFY_FLATPASS_STATUS_URL)
+    except Exception as e:
+        print('[\033[93mWARN\033[0m] Failed to notify GTS service about flatpass status: %s' % e)
+        print('gts-service might be down, or the connection might be lost.')
     # Wait forever for incoming http requests
     server.serve_forever()
 
 except KeyboardInterrupt:
     print('\nServer ended via Keyboard Interrupt.')
+    try:
+        transfer_status = """{
+            "status" : "error",
+            "transfer_platform": "",
+            "details": "Pokemon was not transferred because the transfer was interrupted."
+        }"""
+        flatpass_status = get_flatpass_status("not running")
+
+        notify_gts_service("flatpass status", flatpass_status, GTS_SERVICE_NOTIFY_FLATPASS_STATUS_URL)
+        notify_gts_service("transfer status", transfer_status, GTS_SERVICE_NOTIFY_TRANSFER_STATUS_URL)
+    except Exception as e:
+        print('[\033[93mWARN\033[0m] Failed to notify GTS service about flatpass status: %s' % e)
+        print('gts-service might be down, or the connection might be lost.')
     server.socket.close()
     exit(0)

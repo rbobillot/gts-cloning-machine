@@ -143,8 +143,8 @@ watch(() => tStore.selectedPkmnId, () => updateSelectedPkmnMovesInfo())
     </div>
     <div class="pkmn-held-item">
       <img v-if="tStore.selectedPkmn?.holding.toLocaleLowerCase() !== 'nothing'"
-      v-tooltip.top="tStore.selectedPkmn?.holding"
-      :src="`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${tStore.selectedPkmn?.holding.toLocaleLowerCase().replace(' ', '-')}.png`" />
+       v-tooltip.top="tStore.selectedPkmn?.holding"
+       :src="`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${tStore.selectedPkmn?.holding.toLocaleLowerCase().replace(' ', '-')}.png`" />
     </div>
     <div class="pkmn-name">
       {{tStore.selectedPkmn?.name}}

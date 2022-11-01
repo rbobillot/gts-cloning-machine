@@ -13,6 +13,8 @@
     "light-icons": "^1.0.10",
     "lightvue": "^1.4.9",
     "pinia": "^2.0.22",
+    "socket.io": "^4.5.3",
+    "socket.io-client": "^4.5.3",
     "vue": "^3.2.37",
     "vue-select": "^4.0.0-beta.5"
   },

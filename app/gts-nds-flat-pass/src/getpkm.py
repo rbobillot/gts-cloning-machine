@@ -18,8 +18,7 @@ from array import array
 from namegen import namegen
 from stats import statread
 from os import mkdir
-from urllib import urlencode
-import urllib2
+from http_helper import http_post, notify_gts_service
 import os.path
 import subprocess
 import platform
@@ -75,16 +74,7 @@ def save(path, data):
 
     print '%s saved successfully.' % path,
 
-
-def http_post(url, post_data):
-    req = urllib2.Request(url, post_data)
-    response = urllib2.urlopen(req)
-    content = response.read()
-    response.close()
-    return content
-
-
-def getpkm(create_pkm_url):
+def getpkm(create_pkm_url, notify_transfer_url):
     token = 'c9KcX1Cry3QKS2Ai7yxL6QiQGeBGeQKR'
     sent = False
     print 'Ready to receive from NDS'
@@ -119,4 +109,12 @@ def getpkm(create_pkm_url):
             save(filename, decrypt)
             # statread(decrypt)
             sent = True
+
+            status = """{
+                "status": "success",
+                "transfer_platform": "nds-gts",
+                "details": "Pokemon transferred to GTS"
+            }"""
+            notify_gts_service("transfer status", status, notify_transfer_url)
+
             break

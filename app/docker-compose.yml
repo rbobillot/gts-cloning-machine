@@ -8,9 +8,21 @@ services:
     command: 'npm run dev'
     ports:
       - 8080:8080
+    environment:
+      - EVENT_MANAGER_URL=http://gts-event-manager:8083
     tty: true
     depends_on:
       - gts-service
+      - gts-event-manager
+
+  gts-event-manager:
+    container_name: gts-event-manager
+    build: gts-event-manager
+    command: 'uvicorn app.main:app --host 0.0.0.0 --port 8083'
+    restart: "on-failure"
+    ports:
+      - 8083:8083
+
   gts-service:
     container_name: gts-service
     build: gts-service
@@ -19,11 +31,14 @@ services:
     ports:
       - 8081:8081
     environment:
+      - EVENT_MANAGER_URL=http://gts-event-manager:8083
       - DATABASE_URL=postgresql://fgtsdb:fgtsdb@gts-db:5432/fgtsdb
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       - gts-db
+      - gts-event-manager
+
   # FOR A REASON I DON'T UNDERSTAND, THIS IS WORKING SLOWLY
   # EACH REQUEST TAKES MANY SECONDS TO GET A RESPONSE
   # HENSE, THE gts-nds-flat-pass WILL RUN LOCALLY, OUTSIDE OF A CONTAINER
@@ -41,6 +56,7 @@ services:
   #     - 8082:8082
   #   environment:
   #     - PUBLIC_HOST=$DOCKER_GATEWAY_HOST
+
   gts-db:
     container_name: gts-db
     image: postgres:latest
@@ -60,6 +76,4 @@ services:
       # check if 'gts-db' is properly running, to handle 'gts-service' start/restart (on docker-compose up)
 
 volumes:
-  gts-service:
-  gts-nds-flat-pass:
   gts-db-data:

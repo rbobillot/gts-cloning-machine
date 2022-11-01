@@ -1,22 +1,32 @@
-import { defineStore } from "pinia";
+import { defineStore } from "pinia"
 
 export const useFlatpassStore = defineStore("flatpassStore", {
     state: () => {
         return {
-            fgtsStatus: { isRunning: false, status: "Not Running" }
+            baseFgtsStatus: { isRunning: false, status: "Not Running" },
+            baseNdsStatus: { isConnected: false, status: "Not Connected" }
         };
     },
     actions: {
-        setFgtsStatus(status: any) { // update via socket.io ?
-            this.fgtsStatus = status;
+        setFgtsStatus(status: any) {
+            this.baseFgtsStatus = status;
+        },
+        setNdsStatus(status: any) {
+            this.baseNdsStatus = status;
         },
     },
     getters: {
-        getFgtsStatus(): any {
-            return this.fgtsStatus.status;
+        fgtsStatus(): any {
+            return this.baseFgtsStatus;
         },
-        isFgtsRunning(): boolean {
-            return this.fgtsStatus.isRunning
+        ndsStatus(): any {
+            return this.baseNdsStatus;
+        },
+        isFgtsRunnig(): boolean {
+            return this.baseFgtsStatus.isRunning;
+        },
+        isNdsConnected(): boolean {
+            return this.baseNdsStatus.isConnected;
         },
     }
 });
