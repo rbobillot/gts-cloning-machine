@@ -4,6 +4,7 @@ from array import array
 from datetime import date
 from boxtoparty import makeparty
 
+# TODO: remove file
 
 def makends(gba):
     # Deconstructing GBA .3gpkm file

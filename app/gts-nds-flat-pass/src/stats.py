@@ -1,6 +1,7 @@
 from array import array
 from namegen import namegen
 
+# TODO: remove file
 
 def statread(pkm):
     p = array('B')

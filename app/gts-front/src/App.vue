@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { Ref, ref } from 'vue'
-import axios from 'axios';
 import 'vue-select/dist/vue-select.css'
 import 'light-icons/dist/light-icon.css'
 
@@ -8,7 +6,6 @@ import 'light-icons/dist/light-icon.css'
 
 <template>
 
-<!-- Terminals infos -->
 <div class="main-grid">
 
   <TransferHeader />
@@ -29,8 +26,8 @@ body {
 
 .main-grid {
   display: grid;
-  grid-template-columns: repeat(23, 1fr);
-  grid-template-rows: repeat(16, 1fr);
+  grid-template-columns: repeat(20, 1fr);
+  grid-template-rows: repeat(17, 1fr);
   grid-column-gap: 0px;
   grid-row-gap: 0px;
 }

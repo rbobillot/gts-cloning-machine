@@ -1,29 +1,39 @@
 {
   "name": "gts-front",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "build": "vitest run && vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "testui": "vitest --ui",
+    "coverage": "vitest run --coverage"
   },
   "dependencies": {
     "axios": "^0.27.2",
     "light-icons": "^1.0.10",
     "lightvue": "^1.4.9",
-    "pinia": "^2.0.22",
+    "sass": "^1.56.0",
     "socket.io": "^4.5.3",
     "socket.io-client": "^4.5.3",
     "vue": "^3.2.37",
     "vue-select": "^4.0.0-beta.5"
   },
   "devDependencies": {
+    "@pinia/testing": "^0.0.14",
     "@types/node": "^18.7.18",
     "@types/vue-select": "^3.16.2",
     "@vitejs/plugin-vue": "^3.0.3",
+    "@vitest/coverage-c8": "^0.24.5",
+    "@vitest/ui": "^0.24.5",
+    "@vue/test-utils": "^2.2.1",
+    "jsdom": "^20.0.2",
+    "pinia": "^2.0.23",
     "typescript": "^4.6.4",
     "vite": "^3.0.7",
+    "vitest": "^0.24.5",
     "vue-tsc": "^0.39.5"
   }
 }

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import axios from 'axios'
 import { useEventManagerStore } from '../stores/eventManagerStore'
 import { useFlatpassStore } from '../stores/flatpassStore'
@@ -13,6 +12,7 @@ const gtsServiceUrl = (endpoint: string) => {
   return `http://localhost:8081/${endpoint}`
 }
 
+// TODO: move to flatpassStore
 const updateFlatpassStatus = (data: any) => {
   const connection_details: any = data.connection_details
   const isRunning: boolean = data.status?.toLowerCase() === "running"
@@ -23,6 +23,7 @@ const updateFlatpassStatus = (data: any) => {
   if (!isRunning) tStore.setTransferPending(false)
 }
 
+// TODO: move to flatpassStore
 const updateNdsStatus = (data: any) => {
   const isConnected = data.status?.toLowerCase() === "connected"
   const status = isConnected ? "Connected" : "Not Connected"
@@ -60,13 +61,14 @@ emStore.getFrontSocket.on('flatpass-status', (datastr: string) => {
 <template>
 
 <div class="fgts-status">
-  <LvBadge :color="fpStore.isFgtsRunnig ? 'info' : 'danger'">
+  <LvBadge :color="fpStore.isFgtsRunnig ? 'info' : 'danger'" class="fgts-status-badge">
     GTS Status: {{fpStore.fgtsStatus?.status}}
   </LvBadge>
 </div>
 <div class="nds-status">
   <LvBadge v-if="fpStore.isNdsConnected"
     :color="fpStore.isNdsConnected ? 'info' : 'danger'"
+    class="nds-status-badge">
     >NDS Status: {{fpStore.ndsStatus?.status}}</LvBadge>
 </div>
 
@@ -76,6 +78,5 @@ emStore.getFrontSocket.on('flatpass-status', (datastr: string) => {
 
 .fgts-status { grid-area: 1 / 1 / 2 / 7; }
 .nds-status { grid-area: 1 / 14 / 2 / 19; }
-/*.transfer-status { grid-area: 1 / 5 / 3 / 16; }*/
 
 </style>

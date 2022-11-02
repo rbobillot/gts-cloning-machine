@@ -76,8 +76,11 @@ async def create_pokemon(pkm_data: Pokemon | str):
         pokemon = pkm_data
     else:
         raise HTTPException(status_code=400, detail="Invalid data")
-    await pokemon.save()
-    return pokemon
+    try:
+        await pokemon.save()
+        return pokemon
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
 
 @app.put("/pokemon/{id}", status_code=201)
 async def update_pokemon(id: UUID, pokemon: Pokemon):
