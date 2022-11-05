@@ -17,7 +17,9 @@ import os
 import json
 import thread
 
-print('FLAT-PASS, v0.2.1')
+version="0.2.2"
+
+print("FLAT-PASS, v%s" % version)
 
 if system() == 'Linux':  # or 'Darwin' # (Mac OSX, but sudo doesn't seem to me needed)
     if os.getuid() != 0:

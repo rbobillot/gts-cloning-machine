@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 logger = logging.getLogger("uvicorn")
 
 app = FastAPI(title="GTS Event Manager",
-              description="A small service to handle async events", version="0.2.1")
+              description="A small service to handle async events", version="0.2.2")
 
 sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode='asgi')
 

@@ -1,7 +1,7 @@
 # Dockerfile
 
 # pull the official docker image
-FROM python:3.10.4
+FROM python:3.10.6
 
 # set work directory
 WORKDIR /gts-service

@@ -101,10 +101,10 @@ export const useTransferStore = defineStore("transferStore", {
             return this.pokemonId !== "" ? this.pokemonId : (this.selectedPkmn?.id ? this.selectedPkmn.id : "")
         },
         selectedPkmnHiddenPower(): string {
-            if (!this.selectedPkmn?.hiddenPower || !this.selectedPkmn.hidden_power?.base_power)
-                return "none"
-            else
-                return `${this.selectedPkmn.hidden_power?.base_power} (${this.selectedPkmn?.hidden_power?.power_type})`
+            const bp = this.selectedPkmn.hidden_power?.base_power
+            const pt = this.selectedPkmn.hidden_power?.power_type
+
+            return (bp && pt) ? `${bp} (${pt})` : "none"
         },
         selectedPkmnHeldItem(): string {
             return this.selectedPkmn?.holding?.toLocaleLowerCase()
