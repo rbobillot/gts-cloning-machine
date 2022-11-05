@@ -101,20 +101,33 @@ def getpkm(create_pkm_url, notify_transfer_url):
             data = req.getvars['data']
             bytes = b64decode(data.replace('-', '+').replace('_', '/'))
             decrypt = makepkm(bytes)
-            filename = namegen(decrypt[0x48:0x5e])
-            filename += '.pkm'
-            http_post(
-                url=create_pkm_url,
-                post_data=str(b64encode(decrypt)))
-            save(filename, decrypt)
-            # statread(decrypt)
+
+            try:
+                http_post(
+                    url=create_pkm_url,
+                    post_data=str(b64encode(decrypt)))
+            except Exception as e:
+                notify_transfer_with_transfer_status(notify_transfer_url, "error")
+
             sent = True
 
-            status = """{
-                "status": "success",
-                "transfer_platform": "nds-gts",
-                "details": "Pokemon transferred to GTS"
-            }"""
-            notify_gts_service("transfer status", status, notify_transfer_url)
+            notify_transfer_with_transfer_status(notify_transfer_url, "success")
+
+            """
+            # if you want to save the pokemon to a file, uncomment this
+            filename = namegen(decrypt[0x48:0x5e])
+            filename += '.pkm'
+            save(filename, decrypt)
+            statread(decrypt)
+            """
 
             break
+
+def notify_transfer_with_transfer_status(notify_transfer_url, transfer_status):
+    status = """{
+        "status": "%s",
+        "transfer_platform": "nds-gts",
+        "details": "Pokemon transferred to GTS"
+    }""" % transfer_status
+
+    notify_gts_service("transfer status", status, notify_transfer_url)

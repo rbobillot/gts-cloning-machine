@@ -1,14 +1,11 @@
-#!/usr/bin/python2.7
+#!/usr/bin/env python2.7
 
 # A script that acts as the GTS, for sending and receiving pokemon between a
 # retail cart and a PC. Credit goes to LordLandon and his sendpkm script, as
 # well as the description of the GTS protocol from
 # http://projectpokemon.org/wiki/GTS_protocol
-#
-# - Infinite Recursion
 
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from src import gtsvar
 from src.http_helper import http_post, notify_gts_service
 from src.pokehaxlib import initServ
 from src.getpkm import getpkm
@@ -20,14 +17,14 @@ import os
 import json
 import thread
 
+print('FLAT-PASS, v0.0.1')
+
 if system() == 'Linux':  # or 'Darwin' # (Mac OSX, but sudo doesn't seem to me needed)
     if os.getuid() != 0:
         print('Program must be run as superuser. Enter your password below')
         print('if prompted.')
         os.system('sudo ' + argv[0] + ' root')
         exit(0)
-
-print(gtsvar.version)
 
 initServ()
 sleep(1) # let the server take its time to start

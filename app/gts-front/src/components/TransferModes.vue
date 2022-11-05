@@ -29,9 +29,6 @@ const transferablesSortByOptions = [
 const transferPokemon = () => {
   tStore.setTransferPending(true)
 
-  // removing optionLabelName prop from selectedPkmn
-  // optionLabelName is only used by lv-dropdown to display the selected option
-  // if tStore.selectedPkmn = {}, then pkm = {}
   const { ['optionLabelName']: _, ...pkm } = tStore.selectedPkmn
 
   const pf = tStore.selectedMode?.pf
@@ -47,47 +44,29 @@ const transferPokemon = () => {
       console.log(error)
     })
 
-    /*{
-      // TODO: update gts-service to accept a more complex request (and update database of course)
-
-      .post(gtsServiceUrl('flatpass/transfer', {
-        id: tStore.transferId // not sure of the transferId generation yet
-        date: new Date().toISOString(),
-        platform: tStore.selectedMode?.pf,
-        gen: tStore.selectedMode?.gen,
-        pkm: pkm
-      }
-    */
+  // TODO: update gts-service to accept a more complex request: {id, date, platform, gen, pkm}
 }
 
-const canTransfer = () => {
-  return (!fpStore.isFgtsRunnig // || !fpStore.isNdsConnected) ? false : true
-  || !tStore.selectedMode
-  || (!tStore.selectedPkmnId && tStore.isGtsToNds) 
-  || tStore.isTransferPending)
-}
-
-const pkmsOrder = (a, b) => {
+const pokemonOrdering = (px, py) => {
   if (tStore.transferableSortBy === 'level')
-    return a.level - b.level
+    return px.level - py.level
   else if (tStore.transferableSortBy === 'index')
-    return a.index - b.index
+    return px.index - py.index
   else
-    return a.name.localeCompare(b.name)
+    return px.name.localeCompare(py.name)
 }
 
-// Fetch all transferable Pokemon from gts-service, and update transferablePkmns moves info
-const fetchTransferablePkmns = () => {
+const fetchAndUpdateTransferablePkmns = () => {
   axios.get(gtsServiceUrl('pokemon'))
     .then(response => {
       tStore.setTransferablePkmns(
         response
           .data
-          .sort((a, b) => pkmsOrder(a, b))
+          .sort(pokemonOrdering)
           .map(pkm => {
             return {
               ...pkm,
-              optionLabelName: `${pkm.name} (dex#${pkm.index}, lvl. ${pkm.level})`,
+              optionLabelName: `${pkm.name} (dex #${pkm.index}, lvl. ${pkm.level})`,
             }
           })
       )
@@ -97,33 +76,15 @@ const fetchTransferablePkmns = () => {
     })
 }
 
-fetchTransferablePkmns()
+fetchAndUpdateTransferablePkmns()
 
-/* TODO: fetch pending transfers, when gts-service will support it
-
-  const fetchPendingTransfers = () => {
-    axios.get(gtsServiceUrl('flatpass/transfer/status'))
-      .then(response => {
-        tStore.setPendingTransfers(response.data.status)
-        tStore.setSelectedMode(response.data.mode)
-        tStore.setSelectedPkmn(response.data.selectedPkm)
-      })
-      .catch(error => {
-        console.log('cannot fetch pending transfers', error)
-      })
-  }
-
-  fetchPendingTransfer()
-*/
+// TODO: handle pending transfers fetch ?
 
 emStore.getFrontSocket.on('flatpass-transfer', (datastr: string) => {
   const data = JSON.parse(datastr) // TODO: handle data as object, rather than string
 
-  if (!data.status) return
-
-  // const platform = data.platform.toLowerCase()
-
   if (data.status === "success") {
+    fetchAndUpdateTransferablePkmns()
     tStore.setTransferPending(false)
   } else if (data.status === "error") {
     tStore.setTransferPending(false)
@@ -137,6 +98,7 @@ emStore.getFrontSocket.on('flatpass-transfer', (datastr: string) => {
   <!-- Tranfers options -->
   <div class="transfer-mode" width="100%">
     <lv-dropdown
+      class="transfer-mode-dropdown"
       v-model="tStore.transferMode"
       iconRight="light-icon-chevron-down"
       optionLabel="desc"
@@ -149,20 +111,25 @@ emStore.getFrontSocket.on('flatpass-transfer', (datastr: string) => {
       />
   </div>
   <div class="start-transfer">
-    <lv-button
-      v-show="!tStore.isTransferPending"
-      :disabled="canTransfer()"
+    <lv-button v-if="!tStore.isTransferPending"
+      class="start-transfer-button"
+      :disabled="tStore.isTransferDisabled"
       :rounded="true"
       size="lg"
       @click="transferPokemon()"
-      label="Start Transfer"
+      label="Transfer"
       />
-    <LvLoader v-show="tStore.isTransferPending" type="line-scale" :scale="2" color="grey" />
+    <LvLoader v-else
+      class="start-transfer-loader"
+      type="line-scale"
+      :scale="2"
+      color="grey" />
   </div>
   <div class="pkmn-to-transfer">
     <LvDropdown v-show="tStore.isGtsToNds"
-      iconRight="light-icon-chevron-down"
+      class="pkmn-to-transfer-dropdown"
       v-model="tStore.pokemonId"
+      iconRight="light-icon-chevron-down"
       optionLabel="optionLabelName"
       optionValue="id"
       placeholder="Select a Pokemon to transfer"
@@ -170,12 +137,13 @@ emStore.getFrontSocket.on('flatpass-transfer', (datastr: string) => {
       :options="tStore.transferablePkmns"
       :rounded="true"
       :disabled="tStore.isTransferPending"
-      scrollHeight="350px"
-      @before-show="fetchTransferablePkmns()"
+      :clearable="true"
       />
-  </div>
+      <!-- scrollHeight="350px" creates warning during tests -->
+    </div>
   <div class="transferable-sort-by">
     <LvDropdown v-show="tStore.isGtsToNds"
+      class="transferable-sort-by-dropdown"
       iconRight="light-icon-chevron-down"
       v-model="tStore.transferableSortBy"
       optionLabel="label"
@@ -186,6 +154,7 @@ emStore.getFrontSocket.on('flatpass-transfer', (datastr: string) => {
       :options="transferablesSortByOptions"
       :rounded="true"
       :disabled="tStore.isTransferPending"
+      @before-hide="tStore.sortTransferablePokemons()"
       />
   </div>
 </template>
@@ -193,9 +162,9 @@ emStore.getFrontSocket.on('flatpass-transfer', (datastr: string) => {
 <style scoped>
   
 .transfer-mode { grid-area: 3 / 1 / 4 / 7; }
-.start-transfer { grid-area: 3 / 8 / 4 / 11; }
-.pkmn-to-transfer { grid-area: 3 / 12 / 4 / 18; }
-.transferable-sort-by { grid-area: 3 / 19 / 4 / 21; }
+.start-transfer { grid-area: 3 / 8 / 4 / 9; }
+.pkmn-to-transfer { grid-area: 3 / 10 / 4 / 16; }
+.transferable-sort-by { grid-area: 3 / 17 / 4 / 19; }
 
 .confirmation-content {
   display: flex;
