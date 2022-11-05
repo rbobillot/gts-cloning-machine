@@ -55,11 +55,15 @@ export const useTransferStore = defineStore("transferStore", {
                     return px.name.localeCompare(py.name)
             })
         },
-        deletePkmnFromTransferable(pokemon) {
-            const index = this.transferablePokemons.findIndex(
-                (pkmn) => pkmn.id === pokemon.id
+        resetSelectedPkmn() {
+            this.pokemonId = ""
+            this.receivedPokemon = null
+        },
+        deletePkmnFromTransferableAndReset(pokemon) {
+            this.transferablePokemons = this.transferablePokemons.filter(pkmn =>
+                pkmn.id !== pokemon.id
             )
-            this.transferablePokemons.splice(index, 1)
+            this.resetSelectedPkmn()
         }
     },
     getters: {
@@ -88,13 +92,13 @@ export const useTransferStore = defineStore("transferStore", {
             || this.isTransferPending)
         },
         // pokemon getters
-        selectedPkmnId(): string {
-            return this.pokemonId
-        },
         selectedPkmn(): any {
-            const pkm = this.transferablePkmns.find(pkmn => pkmn.id === this.selectedPkmnId)
+            const pkm = this.transferablePkmns.find(pkmn => pkmn.id === this.pokemonId)
 
-            return pkm ? pkm : {}
+            return pkm ? pkm : (this.receivedPkmn ? this.receivedPkmn : {})
+        },
+        selectedPkmnId(): string {
+            return this.pokemonId !== "" ? this.pokemonId : (this.selectedPkmn?.id ? this.selectedPkmn.id : "")
         },
         selectedPkmnHiddenPower(): string {
             if (!this.selectedPkmn?.hiddenPower || !this.selectedPkmn.hidden_power?.base_power)

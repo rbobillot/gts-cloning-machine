@@ -141,3 +141,5 @@ describe('TransferContent, testing UI updates from transferStore values', () => 
   it.todo('should exists when a Pokemon is received (or Created)')
 
 })
+
+describe.todo('TransferContent, test transferStore actions')

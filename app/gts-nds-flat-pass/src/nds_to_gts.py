@@ -8,20 +8,10 @@
 
 from pokehaxlib import *
 from pkmlib import decode
-from sys import argv, exit
-from string import uppercase, lowercase, digits
-from random import sample
-from time import sleep
-from base64 import b64decode, b64encode, urlsafe_b64encode
+from base64 import b64decode, b64encode
 from binascii import hexlify
 from array import array
-from namegen import namegen
-from stats import statread
-from os import mkdir
 from http_helper import http_post, notify_gts_service
-import os.path
-import subprocess
-import platform
 
 
 def makepkm(bytes):
@@ -48,36 +38,22 @@ def makepkm(bytes):
     return pkm
 
 
-def save(path, data):
-    saved = False
-    if not os.path.isdir('Pokemon'):
-        mkdir('Pokemon')
+def notify_transfer_with_transfer_status(notify_transfer_url, transfer_status):
+    status = """{
+        "status": "%s",
+        "transfer_platform": "nds-gts",
+        "details": "Pokemon transferred to GTS"
+    }"""  % transfer_status
 
-    while not saved:
-        fullpath = os.path.normpath('Pokemon' + os.sep + path)
-        saved = True
-        if os.path.isfile(fullpath):
-            print '%s already exists! Delete?' % path
-            response = raw_input().lower()
-            if response != 'y' and response != 'yes':
-                print 'Enter new filename: (press enter to cancel save) '
-                path = raw_input()
-                if path == '':
-                    print 'Not saved.',
-                    return
-                if not path.strip().lower().endswith('.pkm'):
-                    path += '.pkm'
-                saved = False
+    notify_gts_service("transfer status", status, notify_transfer_url)
 
-    with open(fullpath, 'wb') as f:
-        f.write(data)
 
-    print '%s saved successfully.' % path,
-
-def getpkm(create_pkm_url, notify_transfer_url):
+def nds_to_gts(create_pkm_url, notify_transfer_url):
     token = 'c9KcX1Cry3QKS2Ai7yxL6QiQGeBGeQKR'
     sent = False
-    print 'Ready to receive from NDS'
+
+    print('Ready to receive from NDS')
+
     while not sent:
         sock, req = getReq()
         a = req.action
@@ -86,7 +62,7 @@ def getpkm(create_pkm_url, notify_transfer_url):
             sendResp(sock, token)
         elif a == 'info':
             sendResp(sock, '\x01\x00')
-            print 'Connection Established.'
+            print('Connection Established.')
         elif a == 'setProfile':
             sendResp(sock, '\x00' * 8)
         elif a == 'result':
@@ -97,7 +73,7 @@ def getpkm(create_pkm_url, notify_transfer_url):
             sendResp(sock, '')
         elif a == 'post':
             sendResp(sock, '\x0c\x00')
-            print 'Receiving Pokemon...'
+            print('Receiving Pokemon...')
             data = req.getvars['data']
             bytes = b64decode(data.replace('-', '+').replace('_', '/'))
             decrypt = makepkm(bytes)
@@ -109,25 +85,8 @@ def getpkm(create_pkm_url, notify_transfer_url):
             except Exception as e:
                 notify_transfer_with_transfer_status(notify_transfer_url, "error")
 
-            sent = True
-
             notify_transfer_with_transfer_status(notify_transfer_url, "success")
 
-            """
-            # if you want to save the pokemon to a file, uncomment this
-            filename = namegen(decrypt[0x48:0x5e])
-            filename += '.pkm'
-            save(filename, decrypt)
-            statread(decrypt)
-            """
+            sent = True
 
             break
-
-def notify_transfer_with_transfer_status(notify_transfer_url, transfer_status):
-    status = """{
-        "status": "%s",
-        "transfer_platform": "nds-gts",
-        "details": "Pokemon transferred to GTS"
-    }""" % transfer_status
-
-    notify_gts_service("transfer status", status, notify_transfer_url)

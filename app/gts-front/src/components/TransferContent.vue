@@ -63,7 +63,7 @@ const getDamageClassIcon = (dc) => {
 }
 
 const getPokemonSpriteUrl = () => {
-    if (!tStore.selectedPkmnId || !tStore.transferablePkmns) return
+    if (!tStore.selectedPkmn?.id || !tStore.transferablePkmns) return
 
     const p = tStore.selectedPkmn
     if (!p) return
@@ -100,8 +100,7 @@ const removePokemon = () => {
   axios
     .delete(gtsServiceUrl('pokemon/' + tStore.selectedPkmnId))
     .then((response) => {
-      tStore.deletePkmnFromTransferable(tStore.selectedPkmn)
-      tStore.setPkmnId("")
+      tStore.deletePkmnFromTransferableAndReset(tStore.selectedPkmn)
     })
     .catch((error) => {
       console.log(error)
@@ -133,7 +132,7 @@ watch(() => tStore.selectedPkmnId, () => updateSelectedPkmnMovesInfo())
       <div class="pkmn-name">
         {{tStore.selectedPkmn?.name}}
       </div>
-      <div class="remove-pkmn">
+      <div v-if="tStore.selectedPkmnId" class="remove-pkmn">
         <lv-button
           v-tooltip.top="'Remove Pokemon from inventory'"
           class="lv--danger"

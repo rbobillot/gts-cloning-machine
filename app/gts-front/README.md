@@ -16,53 +16,7 @@ Flow:
 ---
 
 # Fake-GTS to NDS
-![gts-to-nds-grid](../../misc/GTS2NDS-grid.jpg)
+![gts-to-nds](../../misc/GTS2NDS-mewtwo.png)
 
 ---
 
-# NDS to Fake-GTS
-```
-+-----------------------------------------------------------------------------+
-|                                                                             |
-|    Fake-GTS Status: Running on XX.XX.XX.XX         NDS Status: CONNECTED    |
-|                                                                             | 
-+-----------------------------------------------------------------------------+
-|                                                                             |
-|                                                                             |
-|   Mode:  Fake-GTS => NDS (Gen4)                                             |
-|          ----------------------                                             |
-|                                                                             |
-|   +------+ +----------------------------------------------------+ +------+  |
-|   | GTS  | |/////////////////////////////////////////////       | | NDS  |  |
-|   |      | |/////////////////////// 90% /////////////////       | |      |  |
-|   | Logo | |/////////////////////////////////////////////       | | Logo |  |
-|   +------+ +----------------------------------------------------+ +------+  |
-|                                                                             |
-|                                                                             |
-|   Pokemon to Receive:  Pikachu (lvl.1 / rare-candy / timid)  <- - - - - - - - - - -  dropdown menu
-|                        ------------------------------------                 |
-|                                                                             |
-|   +-------+                                                                 |
-|   | Pkmn  |  Name:  Pikachu   Gender:  Male                                 |
-|   |       |  Index: #25       Ability: Static                               |
-|   | icon +-+ Level: 1         Nature:  Timid                                |
-|   +------|O|                                                                |
-|          +-+                                                                |
-|                                                                             |
-|    OT: B,  ID: 39771,  Secret ID: 39765                                     |
-|    Holding: Rare Candy,  Happiness: 73                                      |
-|    Hidden Power: Psychic-type, 42 Base Power                                |
-|                                                                             |
-|    Attacks: +------------+--------+                                         |
-|             | Nasty Plot | Growl  |                                         |
-|             +------------+--------+                                         |
-|             | Charm      | Nuzzle |                                         |
-|             +------------+--------+                                         |
-|                                                                             |
-|    IVs: HP  27, Atk  10, Def  13, SpA  28, SpD   7, Spe  25                 |
-|    EVs: HP   0, Atk   0, Def   0, SpA   0, SpD   0, Spe   0, Total 0        |
-|                                                                             |
-|                                                                             |
-+-----------------------------------------------------------------------------+
-
-```

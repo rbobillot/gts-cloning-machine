@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 logger = logging.getLogger("uvicorn")
 
 app = FastAPI(title="GTS Event Manager",
-              description="A small service to handle async events", version="0.0.1")
+              description="A small service to handle async events", version="0.2.1")
 
 sio = socketio.AsyncServer(cors_allowed_origins="*", async_mode='asgi')
 
@@ -23,6 +23,7 @@ app.add_middleware(
 app.mount('/', socketio.ASGIApp(sio))
 app.mount('/socket.io/', socketio.ASGIApp(sio))
 app.mount('/flatpass-status', socketio.ASGIApp(sio))
+app.mount('/flatpass-transfer', socketio.ASGIApp(sio))
 
 
 @app.get("/health", include_in_schema=False)
@@ -33,7 +34,7 @@ async def health():
 @sio.on('flatpass-status', namespace='/gts-service')
 async def notify_flatpass_status_to_front(sid, data):
     """
-    Notify the front-end that the flatpass status has changed
+    Notifies the front-end that the flatpass status has changed
     - flatpass app started or stopped
     - NDS is connected or disconnected (not handled yet)
     """
@@ -46,6 +47,10 @@ async def notify_flatpass_status_to_front(sid, data):
 
 @sio.on('flatpass-transfer', namespace='/gts-service')
 async def notify_flatpass_transfer_to_front(sid, data):
+    """
+    Notifies the front-end that a Pokemon has been transfered
+    (more precisely, when a Pokemon has been Created
+    """
     logger.info(f"Received flatpass-transfer event from {sid} with data {data}")
     try:
         logger.info('Sending flatpass-transfer event to front')

@@ -68,10 +68,37 @@ describe('TransferModes, testing UI updates from flatpassStore and transferStore
 
   it('should contain a transfer-button (LvButton) when transfer is not pending', () => {
     tStore.$patch({ isPending: false })
+
+    wrapper = shallowMount(TransferModes, wrapperConf)
+
     expect(
       wrapper
         .find('.start-transfer-button')
         .exists()
+    ).toBe(true)
+  })
+
+  it('should contain a transfer-button (LvButton) when transfer is not pending', () => {
+    tStore.$patch({ isPending: false })
+
+    wrapper = shallowMount(TransferModes, wrapperConf)
+
+    expect(
+      wrapper
+        .find('.start-transfer-button')
+        .exists()
+    ).toBe(true)
+  })
+
+  test('the pkmn-to-transfer-dropdown div should be displayed when gts-nds mode is selected', () => {
+    tStore.$patch({ transferMode: { pf: 'gts-nds' } })
+
+    wrapper = shallowMount(TransferModes, wrapperConf)
+
+    expect(
+      wrapper
+        .find('.pkmn-to-transfer-dropdown')
+        .isVisible()
     ).toBe(true)
   })
 
@@ -185,6 +212,22 @@ describe('TransferModes, testing UI updates from flatpassStore and transferStore
           .find('.start-transfer-loader')
           .exists()
       ).toBe(true)
+  })
+
+  it('should disable every transfer selectors (and the loader) when a transfer is pending', () => {
+      fpStore.$patch({
+        baseFgtsStatus: { isRunning: true }
+      })
+      tStore.$patch({
+        isPending: true,
+        transferMode: { pf: 'nds-gts' },
+      })
+  
+      wrapper = shallowMount(TransferModes, wrapperConf)
+  
+      expect(wrapper.find('.transfer-mode-dropdown').attributes('disabled')).toBe('true')
+      expect(wrapper.find('.start-transfer-loader').attributes('disabled')).toBe('true')
+      expect(wrapper.find('.pkmn-to-transfer-dropdown').attributes('disabled')).toBe('true')
   })
 
   it('should not contain a transfer-loader when after a transfer is done, it should rather contain a transfer-button', () => {

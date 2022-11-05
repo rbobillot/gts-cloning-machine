@@ -1,5 +1,6 @@
 from urllib import urlencode
 import urllib2
+import json
 
 def http_post(url, post_data, json=False):
     if (json):

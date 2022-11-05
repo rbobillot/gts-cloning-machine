@@ -1,9 +1,10 @@
 import httpx
+import json
 import logging
 import ormar
 import socketio
 
-from base64 import b64encode, b64decode
+from base64 import b64decode
 from fastapi import FastAPI, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,7 +21,7 @@ FLATPASS_PORT = '8082'
 logger = logging.getLogger("uvicorn")
 
 app = FastAPI(title="FakeGTS API",
-              description="A fake GTS API, and a cloning machine", version="0.0.2")
+              description="A fake GTS API, and a cloning machine", version="0.2.1")
 
 # Allow CORS for all origins (used for manual testing)
 app.add_middleware(
@@ -64,6 +65,9 @@ async def create_pokemon(pkm_data: Pokemon | str):
      - If the received data is a string, it is assumed to be a base64 encoded string.
        Hense, it is decoded and converted to a Pokemon object, and then saved to the database
      - If the received data is a Pokemon object, it is directly saved to the database
+
+    After the pokemon is saved, the event manager is notified with a 'create-success' message 
+    (so the front can display the created Pokemon)
     """
     if isinstance(pkm_data, str):
         try:
@@ -78,9 +82,19 @@ async def create_pokemon(pkm_data: Pokemon | str):
         raise HTTPException(status_code=400, detail="Invalid data")
     try:
         await pokemon.save()
+        await sio.emit('flatpass-transfer', json.dumps({
+            'status': 'create-success',
+            'transfer_platform': 'nds-gts',
+            'details': f'{pokemon.raw_pkm_data}'
+        }), namespace='/gts-service')
         return pokemon
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc: # TODO: Handle more exceptions (cannot save pokemon, cannot emit event)
+        await sio.emit('flatpass-transfer', json.dumps({
+            'status': 'error',
+            'transfer_platform': 'nds-gts',
+            'details': 'Error while saving pokemon' # TODO: add more details
+        }), namespace='/gts-service')
+        raise HTTPException(status_code=500, detail=str(exc))
 
 @app.put("/pokemon/{id}", status_code=201)
 async def update_pokemon(id: UUID, pokemon: Pokemon):

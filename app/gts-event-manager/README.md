@@ -6,10 +6,10 @@ Simple event manager for GTS
  - Http server
 
 It must handle events (mostly async) linked to the GTS, between services:
- - [ ] NDS availability
- - [ ] gts-nds-flatpass availability
- - [ ] GTS to NDS Pokemon transfer
- - [ ] NDS to GTS Pokemon transfer
+ - [x] gts-nds-flatpass availability
+ - [x] GTS to NDS Pokemon transfer
+ - [x] NDS to GTS Pokemon transfer
+ - [ ] NDS availability (it might not be possible to handle)
 
 # Data Received
 

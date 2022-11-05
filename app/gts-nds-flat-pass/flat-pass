@@ -6,10 +6,10 @@
 # http://projectpokemon.org/wiki/GTS_protocol
 
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
-from src.http_helper import http_post, notify_gts_service
+from src.http_helper import notify_gts_service
 from src.pokehaxlib import initServ
-from src.getpkm import getpkm
-from src.sendpkm import sendpkm
+from src.nds_to_gts import nds_to_gts
+from src.gts_to_nds import gts_to_nds
 from platform import system
 from sys import argv, exit
 from time import sleep
@@ -17,7 +17,7 @@ import os
 import json
 import thread
 
-print('FLAT-PASS, v0.0.1')
+print('FLAT-PASS, v0.2.1')
 
 if system() == 'Linux':  # or 'Darwin' # (Mac OSX, but sudo doesn't seem to me needed)
     if os.getuid() != 0:
@@ -81,7 +81,7 @@ def transfer_from_gts_to_nds(self):
     pkm = pkm_data_b64.decode('base64')
     gts_service_transfer_event_url = GTS_SERVICE_BASE_URL + "/event/flatpass/transfer"
 
-    thread.start_new_thread(sendpkm, (pkm, gts_service_transfer_event_url,))
+    thread.start_new_thread(gts_to_nds, (pkm, gts_service_transfer_event_url,))
 
     return self.sendResponse('{"action": "send"}', 200, 'application/json')
 
@@ -89,7 +89,7 @@ def transfer_from_nds_to_gts(self):
     gts_service_create_pkm_url = GTS_SERVICE_BASE_URL + "/pokemon"
     gts_service_transfer_event_url = GTS_SERVICE_BASE_URL + "/event/flatpass/transfer"
     
-    thread.start_new_thread(getpkm, (gts_service_create_pkm_url, gts_service_transfer_event_url,))
+    thread.start_new_thread(nds_to_gts, (gts_service_create_pkm_url, gts_service_transfer_event_url,))
 
     return self.sendResponse('{"action": "receive"}', 200, 'application/json')
 
@@ -134,7 +134,7 @@ try:
     try:
         notify_gts_service("flatpass status", get_flatpass_status("running"), GTS_SERVICE_NOTIFY_FLATPASS_STATUS_URL)
     except Exception as e:
-        print('[\033[93mWARN\033[0m] Failed to notify GTS service about flatpass status: %s' % e)
+        print('Failed to notify GTS service about flatpass status: %s' % e)
         print('gts-service might be down, or the connection might be lost.')
     # Wait forever for incoming http requests
     server.serve_forever()
@@ -142,17 +142,17 @@ try:
 except KeyboardInterrupt:
     print('\nServer ended via Keyboard Interrupt.')
     try:
+        flatpass_status = get_flatpass_status("not running")
         transfer_status = """{
             "status" : "error",
-            "transfer_platform": "",
+            "transfer_platform": "none",
             "details": "Pokemon was not transferred because the transfer was interrupted."
         }"""
-        flatpass_status = get_flatpass_status("not running")
 
         notify_gts_service("flatpass status", flatpass_status, GTS_SERVICE_NOTIFY_FLATPASS_STATUS_URL)
         notify_gts_service("transfer status", transfer_status, GTS_SERVICE_NOTIFY_TRANSFER_STATUS_URL)
     except Exception as e:
-        print('[\033[93mWARN\033[0m] Failed to notify GTS service about flatpass status: %s' % e)
+        print('Failed to notify GTS service about flatpass status: %s' % e)
         print('gts-service might be down, or the connection might be lost.')
     server.socket.close()
     exit(0)

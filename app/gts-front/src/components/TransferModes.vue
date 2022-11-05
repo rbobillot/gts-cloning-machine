@@ -37,7 +37,7 @@ const transferPokemon = () => {
   axios
     .post(gtsServiceUrl(`flatpass/transfer?transfer_platform=${pf}&gen=${gen}`), pkm)
     .then((response) => {
-      console.log(response)
+      // console.log(response)
     })
     .catch((error) => {
       tStore.setTransferPending(false)
@@ -57,7 +57,7 @@ const pokemonOrdering = (px, py) => {
 }
 
 const fetchAndUpdateTransferablePkmns = () => {
-  axios.get(gtsServiceUrl('pokemon'))
+  return axios.get(gtsServiceUrl('pokemon'))
     .then(response => {
       tStore.setTransferablePkmns(
         response
@@ -83,10 +83,15 @@ fetchAndUpdateTransferablePkmns()
 emStore.getFrontSocket.on('flatpass-transfer', (datastr: string) => {
   const data = JSON.parse(datastr) // TODO: handle data as object, rather than string
 
-  if (data.status === "success") {
-    fetchAndUpdateTransferablePkmns()
-    tStore.setTransferPending(false)
-  } else if (data.status === "error") {
+  if (data.status?.endsWith("success")) {
+    fetchAndUpdateTransferablePkmns().then(() => {
+      tStore.setTransferPending(false)
+      if (data.status === "create-success") {
+        const pkmn = tStore.transferablePkmns.find(p => p.raw_pkm_data === data.details)
+        tStore.setReceivedPkmn(pkmn)
+      }
+    })
+  } else if (["error", "failure"].includes(data.status?.toLocaleLowerCase())) {
     tStore.setTransferPending(false)
   }
 })
@@ -108,6 +113,7 @@ emStore.getFrontSocket.on('flatpass-transfer', (datastr: string) => {
       :options="transferModes"
       :rounded="true"
       :disabled="tStore.isTransferPending"
+      @before-hide="tStore.resetSelectedPkmn()"
       />
   </div>
   <div class="start-transfer">
@@ -122,6 +128,7 @@ emStore.getFrontSocket.on('flatpass-transfer', (datastr: string) => {
     <LvLoader v-else
       class="start-transfer-loader"
       type="line-scale"
+      :disabled="tStore.isTransferDisabled"
       :scale="2"
       color="grey" />
   </div>
