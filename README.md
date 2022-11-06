@@ -1,6 +1,9 @@
 # gts-cloning-machine
 A cloning machine, using the GTS (Global Trade System).
 -
+# HOW-TO:
+[![Video Preview](misc/gcm-video-review.png)](https://www.youtube.com/watch?v=Tf04vHqreVw)
+-
 ![architecture](misc/gts-cloning-machine.jpg)
 
 ---
@@ -32,4 +35,3 @@ A cloning machine, using the GTS (Global Trade System).
     - [ ] handling them with cartrige_id, nds_id or nds_mac_addr, to segregate every pokemon upload/download
   - ##### (if possible) Get rid of gamestat/pokemonclassic servers
     - [ ] recreacting their behaviour
-
