@@ -17,7 +17,7 @@ import os
 import json
 import thread
 
-version="0.2.3"
+version="0.2.4"
 
 print("FLAT-PASS, v%s" % version)
 

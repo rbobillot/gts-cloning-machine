@@ -21,7 +21,7 @@ FLATPASS_PORT = '8082'
 logger = logging.getLogger("uvicorn")
 
 app = FastAPI(title="FakeGTS API",
-              description="A fake GTS API, and a cloning machine", version="0.2.3")
+              description="A fake GTS API, and a cloning machine", version="0.2.4")
 
 # Allow CORS for all origins (used for manual testing)
 app.add_middleware(
