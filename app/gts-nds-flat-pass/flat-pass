@@ -17,16 +17,16 @@ import os
 import json
 import thread
 
-version="0.2.4"
-
-print("FLAT-PASS, v%s" % version)
 
 if system() == 'Linux':  # or 'Darwin' # (Mac OSX, but sudo doesn't seem to me needed)
     if os.getuid() != 0:
-        print('Program must be run as superuser. Enter your password below')
-        print('if prompted.')
+        print('Program must be run as superuser. Enter your password below if prompted.')
         os.system('sudo ' + argv[0] + ' root')
         exit(0)
+
+
+version="0.3.0"
+print("FLAT-PASS, v%s" % version)
 
 initServ()
 sleep(1) # let the server take its time to start
@@ -77,21 +77,21 @@ def get_flatpass_status(status): # status := "running" | "not running"
         }
     }""" % (status, platform, host, port)
 
-def transfer_from_gts_to_nds(self):
+def transfer_from_gts_to_nds(self, gen):
     body = self.rfile.read(int(self.headers['Content-Length']))
     pkm_data_b64 = json.loads(body).get('raw_pkm_data')
     pkm = pkm_data_b64.decode('base64')
     gts_service_transfer_event_url = GTS_SERVICE_BASE_URL + "/event/flatpass/transfer"
 
-    thread.start_new_thread(gts_to_nds, (pkm, gts_service_transfer_event_url,))
+    thread.start_new_thread(gts_to_nds, (gen, pkm, gts_service_transfer_event_url,))
 
     return self.sendResponse('{"action": "send"}', 200, 'application/json')
 
-def transfer_from_nds_to_gts(self):
+def transfer_from_nds_to_gts(self, gen):
     gts_service_create_pkm_url = GTS_SERVICE_BASE_URL + "/pokemon"
     gts_service_transfer_event_url = GTS_SERVICE_BASE_URL + "/event/flatpass/transfer"
     
-    thread.start_new_thread(nds_to_gts, (gts_service_create_pkm_url, gts_service_transfer_event_url,))
+    thread.start_new_thread(nds_to_gts, (gen, gts_service_create_pkm_url, gts_service_transfer_event_url,))
 
     return self.sendResponse('{"action": "receive"}', 200, 'application/json')
 
@@ -110,14 +110,14 @@ class handleRoutes(BaseHTTPRequestHandler):
             return self.sendResponse('Not found.', 404, 'text/plain')
 
     def do_POST(self):
-        if (self.path.startswith('/transfer/gen-4')):
+        if (self.path.startswith('/transfer/gen-')):
+            gen = self.path.split('/')[2].split('-')[1]
+            if gen not in ['4', '5']:
+                return self.sendResponse('Gen %s not handled' % gen, 404, 'text/plain')
             if (self.path.endswith('/gts-nds')):
-                return transfer_from_gts_to_nds(self)
+                return transfer_from_gts_to_nds(self, int(gen))
             elif (self.path.endswith('/nds-gts')):
-                return transfer_from_nds_to_gts(self)
-        elif (self.path.startswith('/transfer/gen-5')):
-            # TODO: Actually, Gen 5 might work, but I have to test it
-            return self.sendResponse('Gen 5, not handled yet.', 404, 'text/plain')
+                return transfer_from_nds_to_gts(self, int(gen))
         else:
             return self.sendResponse('Not found.', 404, 'text/plain')
 

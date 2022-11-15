@@ -55,6 +55,9 @@ export const useTransferStore = defineStore("transferStore", {
                     return px.name.localeCompare(py.name)
             })
         },
+        filterTransferablePkmns() {
+
+        },
         resetSelectedPkmn() {
             this.pokemonId = ""
             this.receivedPokemon = null
@@ -116,6 +119,16 @@ export const useTransferStore = defineStore("transferStore", {
             return (this.selectedPkmnId != "" && this.transferablePkmns.some(p => p.id === this.selectedPkmnId))
         },
         transferablePkmns(): any[] {
+            // Allow Gen5 => Gen4 (newer to older gens) transfers,
+            // only for Pokemons that belong to older gen
+            if (this.selectedMode?.pf === 'gts-nds' && this.selectedMode?.gen === 4)
+                /**
+                 * TODO [Gen5 handling]: add origin_game field in Pokemon object
+                 * The filter by Nat. Index is good to avoid errors,
+                 *   when trying to transfer unavailable Pokemons for older gens (example: send Zekrom to DPPt must be impossible)
+                 *   but it's bad when transfering Pokemon with newer types, attacks or abilities to older gens...
+                 **/ 
+                return this.transferablePokemons.filter(pkmn => pkmn.index <= 493)
             return this.transferablePokemons
         },
         receivedPkmn(): any {

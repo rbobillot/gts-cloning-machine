@@ -3,28 +3,60 @@ import sys
 import time
 import thread
 
-
 class Request:
     def __init__(self, h=None):
+        _gen_4_base_route = '/pokemondpds'
+        _gen_5_base_route = '/syachi2ds/web'
+
         if not h:
             self.action = None
             self.page = None
             self.getvars = {}
+            self.base_route = ''
+            self.gen = -1
             return
+
         if not h.startswith("GET"):
-            raise TypeError("Not a DS header!")
-        request = h[h.find("/pokemondpds/")+13:h.find("HTTP/1.1")-1]
-        # request=h.split("/")[3][:h.find("HTTP")-1]
-        self.page = request[:request.find("?")]
+            raise TypeError("Not a DS header !", h)
+
+        if _gen_4_base_route in h:
+            self.base_route = _gen_4_base_route
+            self.gen = 4
+        elif _gen_5_base_route in h:
+            self.base_route = _gen_5_base_route
+            self.gen = 5
+        else:
+            raise TypeError("Not a gen 4 nor 5 DS header !", h)
+
+        def get_target_url(head):
+            """
+            Base requests are formatted like this:
+            # Gen 4: 'GET /pokemondpds/worldexchange/info.asp?pid=108015551 HTTP/1.1\r\nHost: gamestats2.gs.nintendowifi.net\r\nUser-Agent: GameSpyHTTP/1.0\r\nConnection: close\r\n\r\n'
+            # Gen 5: 'GET /syachi2ds/web/worldexchange/info.asp?pid=601749232 HTTP/1.1\r\nHost: gamestats2.gs.nintendowifi.net\r\nUser-Agent: GameSpyHTTP/1.0\r\nConnection: close\r\n\r\n'
+
+            We need to extract the target URL: 'worldexchange/info.asp?pid=108015551'
+            - info.asp: the action
+            - pid: the ID of the DS Cartridge
+            """
+            target_endpoint = "%s/" % self.base_route
+            target_url_index = head.find(target_endpoint) + len(target_endpoint)
+            http_version_index = head.find("HTTP/1.1") - 1
+            return head[target_url_index:http_version_index]
+
+        request = get_target_url(h)
+        query_params_index = request.find("?")
+        query_params = request[query_params_index + 1:].split("&")
+        vars = dict((i[:i.find("=")], i[i.find("=")+1:]) for i in query_params)
+
+        self.page = request[:query_params_index]
         self.action = request[request.find("/")+1:request.find(".asp?")]
-        vars = dict((i[:i.find("=")], i[i.find("=")+1:])
-                    for i in request[request.find("?")+1:].split("&"))
         self.getvars = vars
 
     def __str__(self):
-        request = "%s?%s" % (self.page, '&'.join("%s=%s" %
-                             i for i in self.getvars.items()))
-        return 'GET /pokemondpds/%s HTTP/1.1\r\n' % request + \
+        if self.page == None:
+            raise TypeError("No target endpoint !", self)
+        request = "%s?%s" % (self.page, '&'.join("%s=%s" % i for i in self.getvars.items()))
+        return 'GET %s/%s HTTP/1.1\r\n' % (self.base_route, request) + \
             'Host: gamestats2.gs.nintendowifi.net\r\nUser-Agent: GameSpyHTTP/1.0\r\n' + \
             'Connection: close\r\n\r\n'
 
@@ -37,35 +69,14 @@ class Response:
     resps = None
 
     def __init__(self, h):
-        if not h.startswith("HTTP/1.1"):
-            self.data = h
-            return
-        h = h.split("\r\n")
-        while True:
-            line = h.pop(0)
-            if not line:
-                break
-            elif line.startswith("P3P"):
-                # I don't know what this is
-                self.p3p = line[line.find(": ")+2:]
-            elif line.startswith("cluster-server"):
-                self.server = line[line.find(": ")+2:]  # for fun
-            elif line.startswith("X-Server-"):
-                self.sname = line[line.find(": ")+2:]  # for fun
-            elif line.startswith("Content-Length"):
-                self.len = int(line[line.find(": ")+2:])  # need
-            elif line.startswith("Set-Cookie"):
-                self.cookie = line[line.find(": ")+2:]  # don't need
-        self.data = "\r\n".join(h)
+        self.data = h
 
     def __str__(self):
-        months = ["???", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul",
-                  "Aug", "Sep", "Oct", "Nov", "Dec"]
+        months = ["???", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         t = time.gmtime()
         return "HTTP/1.1 200 OK\r\n" + \
-               "Date: %s, %02i %s %i %02i:%02i:%02i GMT\r\n" % (days[t[6]],
-                                                                t[2], months[t[1]], t[0], t[3], t[4], t[5]) + \
+               "Date: %s, %02i %s %i %02i:%02i:%02i GMT\r\n" % (days[t[6]], t[2], months[t[1]], t[0], t[3], t[4], t[5]) + \
                "Server: Microsoft-IIS/6.0\r\n" + \
                "P3P: CP='NOI ADMa OUR STP'\r\n" + \
                "cluster-server: aphexweb3\r\n" + \
@@ -74,7 +85,7 @@ class Response:
                "Content-Length: %i\r\n" % len(self.data) + \
                "Content-Type: text/html\r\n" + \
                "Set-Cookie: ASPSESSIONIDQCDBDDQS=JFDOAMPAGACBDMLNLFBCCNCI; path=/\r\n" + \
-               "Cache-control: private\r\n\r\n"+self.data
+               "Cache-control: private\r\n\r\n" + self.data
 
     def getpkm(self):
         all = []
@@ -87,7 +98,6 @@ class Response:
 
 
 def dnsspoof():
-    #dns_server = "164.132.44.106"
     dns_server = "178.62.43.212"  # This is the unofficial pkmnclassic.net server
     s = socket.socket()
     s.connect((dns_server, 53))
@@ -115,25 +125,24 @@ def dnsspoof():
         if "gamestats2" in rr:
             rr = rr[:-4]+me
         dnsserv.sendto(rr, r[1])
+        # TODO: handle nds connection status
+        # print('NDS Connected', r[1])
 
 
 serv = None
-log = None
 
 
-def initServ(logfile=None):
-    global serv, log
+def initServ():
+    global serv
     thread.start_new_thread(dnsspoof, ())
     serv = socket.socket()
     serv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     serv.bind(("0.0.0.0", 80))
     serv.listen(5)
-    if logfile:
-        log = open(logfile, 'w')
 
 
 def getReq():
-    global serv, log
+    global serv
     sock, addr = serv.accept()
     sock.settimeout(2)
     data = ""
@@ -144,25 +153,19 @@ def getReq():
         except socket.timeout:
             break
     ans = Request(data)
-    if log:
-        log.write(data+"\ndone---done\n")
-    # print addr, " requested ",  repr(ans)
     return sock, ans
 
 
 def sendResp(sock, data):
-    global serv, log
+    global serv
     resp = Response(data) if not isinstance(data, Response) else data
-    if log:
-        log.write(str(resp)+"\ndone---done\n")
-    return sock.send(str(resp))
+    sock.send(str(resp))
+    sock.shutdown(2)
+    return
 
 
 def respFromServ(req):
     s = socket.socket()
-    #s.connect(("gamestats2.gs.nintendowifi.net", 80))
-    # s.connect(("207.38.11.146", 80))
-    #s.connect(("164.132.44.106", 80))
     s.connect(("178.62.43.212", 80))
     s.send(str(req))
     data = ""

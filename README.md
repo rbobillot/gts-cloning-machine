@@ -1,6 +1,5 @@
-# gts-cloning-machine
+# gts-cloning-machine (version=0.3.0)
 A cloning machine, using the GTS (Global Trade System).
-
 ---
 
 # What is it ?
@@ -75,7 +74,7 @@ but the interfaces are not user friendly, therefore, I wanted to add a better us
     - [x] uses a readble frontend, to make life easier (cf gts-front/README.md)
   - ##### Handle Gen 4 and 5
     - [x] Gen 4
-    - [ ] Gen 5
+    - [x] Gen 5
 
  - ### v2.0.0
   - ##### Run everything on hosted servers
