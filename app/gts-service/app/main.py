@@ -12,7 +12,7 @@ from uuid import UUID
 
 from app.db import Pokemon, database
 from app.dto import FlatpassStatus, FlatpassTransfer, PlatformEnum, TransferPlatformEnum
-from app.pkm_ser_de import pkm_to_json
+from app.pkm_convert import pkm_to_json, pkm_convert_to_gen
 from app.ws_events_handler import sio, connect_to_event_manager
 
 FLATPASS_HOST = 'host.docker.internal'
@@ -21,7 +21,7 @@ FLATPASS_PORT = '8082'
 logger = logging.getLogger("uvicorn")
 
 app = FastAPI(title="FakeGTS API",
-              description="A fake GTS API, and a cloning machine", version="0.2.4")
+              description="A fake GTS API, and a cloning machine", version="0.3.0")
 
 # Allow CORS for all origins (used for manual testing)
 app.add_middleware(
@@ -142,7 +142,7 @@ async def transfer_pokemon(pokemon: Pokemon | dict, transfer_platform: TransferP
     """
     if transfer_platform is None:
         raise HTTPException(status_code=400, detail="Missing platform")
-    if gen != 4:
+    if gen not in [4,5]:
         raise HTTPException(status_code=400, detail=f"Gen {gen} if not supported yet")
 
     try:
@@ -153,13 +153,16 @@ async def transfer_pokemon(pokemon: Pokemon | dict, transfer_platform: TransferP
                 json={},
                 timeout=None)
         elif isinstance(pokemon, Pokemon) and transfer_platform == TransferPlatformEnum.gts_nds:
+            pkm = b64decode(pokemon.raw_pkm_data)
+            pkm = pkm_convert_to_gen(pkm, gen) # does not handle gen5 to gen4 yet
             httpx.post(
                 f'http://{FLATPASS_HOST}:{FLATPASS_PORT}/transfer/gen-{gen}/{transfer_platform}',
-                json=jsonable_encoder(pokemon),
+                json=pkm_to_json(pkm),
                 timeout=None)
             try:
                 await pokemon.save()
             except:
+                # no HTTPException (gts-nds can be successful even if the pokemon already exists)
                 logger.warning(f"Pokemon {pokemon.id} already exists")
         else:
             raise HTTPException(status_code=400, detail="Invalid data")

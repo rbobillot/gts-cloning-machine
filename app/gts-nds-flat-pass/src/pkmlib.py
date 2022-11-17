@@ -26,7 +26,6 @@ def encode(pkm):
     for i in order:
         shifted += s[3+16*i:19+16*i]
     shifted += s[67:]
-
     rand = makerand(s[2])
     for i in range(3, 67):
         shifted[i] ^= rand()
@@ -46,7 +45,6 @@ def decode(bin):
         rand = makerand(shifted[0])
         for i in range(67, len(shifted)):
             shifted[i] ^= rand()
-
     shift = ((shifted[0] >> 0xD & 0x1F) % 24)
     order = [ord(i) for i in shiftind[4*shift:4*shift+4]]
     s = shifted[:3]

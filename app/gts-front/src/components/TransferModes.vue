@@ -2,11 +2,9 @@
 import axios from 'axios';
 import 'vue-select/dist/vue-select.css';
 import { useEventManagerStore } from '../stores/eventManagerStore'
-import { useFlatpassStore } from '../stores/flatpassStore';
 import { useTransferStore } from '../stores/transferStore';
 
 const emStore = useEventManagerStore()
-const fpStore = useFlatpassStore()
 const tStore = useTransferStore()
 
 const gtsServiceUrl = (endpoint: string) => {
@@ -15,9 +13,9 @@ const gtsServiceUrl = (endpoint: string) => {
 
 const transferModes = [
   { mode: { pf: 'nds-gts', gen: 4 }, desc: "NDS (Gen 4) to GTS" },
+  { mode: { pf: 'nds-gts', gen: 5 }, desc: "NDS (Gen 5) to GTS" },
   { mode: { pf: 'gts-nds', gen: 4 }, desc: "GTS to NDS (Gen 4)" },
-  // { mode: { pf: 'nds-gts', gen: 5 }, desc: "NDS (Gen 5) to GTS" },
-  // { mode: { pf: 'gts-nds', gen: 5 }, desc: "GTS to NDS (Gen 5)" },
+  { mode: { pf: 'gts-nds', gen: 5 }, desc: "GTS to NDS (Gen 5)" },
 ]
 
 const transferablesSortByOptions = [
@@ -44,7 +42,7 @@ const transferPokemon = () => {
       console.log(error)
     })
 
-  // TODO: update gts-service to accept a more complex request: {id, date, platform, gen, pkm}
+  // TODO: update gts-service to accept a more complex request: {id, date, pkm}
 }
 
 const pokemonOrdering = (px, py) => {
