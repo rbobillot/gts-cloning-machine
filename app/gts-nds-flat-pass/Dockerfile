@@ -8,3 +8,5 @@ WORKDIR /gts-nds-flat-pass
 
 # copy project
 COPY . .
+
+EXPOSE 8080 80

@@ -17,7 +17,6 @@ import os
 import json
 import thread
 
-
 if system() == 'Linux':  # or 'Darwin' # (Mac OSX, but sudo doesn't seem to me needed)
     if os.getuid() != 0:
         print('Program must be run as superuser. Enter your password below if prompted.')
